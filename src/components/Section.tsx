@@ -27,6 +27,7 @@ type Props = {
   dissolveDoneCount?: number
   dissolvePhase?: DissolvePhase
   upcomingDissolveId?: string | null
+  onSelectItem?: (id: string) => void
 }
 
 export function Section({
@@ -43,6 +44,7 @@ export function Section({
   dissolveDoneCount = 0,
   dissolvePhase = 'idle',
   upcomingDissolveId = null,
+  onSelectItem,
 }: Props) {
   const styles = SECTION_STYLES[tone]
 
@@ -104,6 +106,11 @@ export function Section({
                   status={item.status}
                   index={i}
                   dissolving={isActive}
+                  onSelect={
+                    onSelectItem && !isActive && !isWaiting
+                      ? () => onSelectItem(item.id)
+                      : undefined
+                  }
                 />
               )
 

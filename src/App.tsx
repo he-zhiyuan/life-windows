@@ -265,8 +265,8 @@ export default function App() {
         onClose={() => setSelectedId(null)}
       />
 
-      <div className="lg:hidden">
-        <div className="mx-auto max-w-2xl px-4 pb-16 pt-8 sm:px-6">
+      <div className="lg:hidden overflow-x-hidden">
+        <div className="mx-auto max-w-2xl px-4 pb-[max(4rem,env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))] sm:px-6">
           <Header />
 
           <div className="mt-8 space-y-4">
@@ -293,6 +293,7 @@ export default function App() {
               items={groups.open}
               tone="open"
               emptyText="当前没有处于最佳期的窗口"
+              onSelectItem={setSelectedId}
             />
             <Section
               id={SECTION_IDS.closing}
@@ -300,6 +301,7 @@ export default function App() {
               hint="仍有机会"
               items={groups.closing}
               tone="closing"
+              onSelectItem={setSelectedId}
             />
             <Section
               id={SECTION_IDS.upcoming}
@@ -307,6 +309,7 @@ export default function App() {
               hint="提前了解"
               items={groups.upcoming}
               tone="upcoming"
+              onSelectItem={setSelectedId}
             />
             {!rangeMode &&
               (mobileClosedItems.length > 0 || phase === 'queued' || phase === 'dissolving') && (
@@ -323,6 +326,7 @@ export default function App() {
                 dissolvePhase={phase}
                 upcomingDissolveId={upcomingDissolveId}
                 onDissolveComplete={completeDissolve}
+                onSelectItem={setSelectedId}
               />
             )}
           </main>

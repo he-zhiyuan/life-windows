@@ -46,7 +46,7 @@ export function SummaryStrip({
         className={cn(
           stacked
             ? 'flex flex-col gap-1.5'
-            : 'flex gap-2 overflow-x-auto pb-0.5 scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+            : 'flex flex-wrap gap-2',
         )}
       >
         {items.map((item) => {

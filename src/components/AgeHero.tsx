@@ -59,7 +59,7 @@ export function AgeHero({ age, rangeMode, rangeStart, rangeEnd, compact }: Props
             animate={{ opacity: 1, y: 0 }}
             className={cn(
               'mt-0.5 font-serif font-semibold tabular-nums',
-              compact ? 'text-3xl' : 'text-5xl sm:text-6xl',
+              compact ? 'text-3xl' : 'text-4xl sm:text-5xl',
             )}
           >
             {age}

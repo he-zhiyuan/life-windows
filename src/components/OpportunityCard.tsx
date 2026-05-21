@@ -17,6 +17,7 @@ type Props = {
   status: WindowStatus
   index?: number
   dissolving?: boolean
+  onSelect?: () => void
 }
 
 const IMPORTANCE_TAG: Record<string, string> = {
@@ -25,7 +26,13 @@ const IMPORTANCE_TAG: Record<string, string> = {
   medium: 'bg-stone-50 text-stone-600 ring-stone-100',
 }
 
-export function OpportunityCard({ opportunity, status, index = 0, dissolving }: Props) {
+export function OpportunityCard({
+  opportunity,
+  status,
+  index = 0,
+  dissolving,
+  onSelect,
+}: Props) {
   const { window, title, description, alternatives, note, category, importance } =
     opportunity
   const Icon = CATEGORY_ICONS[category]
@@ -37,18 +44,34 @@ export function OpportunityCard({ opportunity, status, index = 0, dissolving }: 
   const altLabel = status === 'closed' ? '补救与替代' : '若错过，仍可'
   const closed = status === 'closed' && !dissolving
 
+  const interactive = Boolean(onSelect) && !dissolving
+
   return (
     <motion.article
       layout={!dissolving}
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(index * 0.03, 0.3), duration: 0.3 }}
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      onClick={interactive ? onSelect : undefined}
+      onKeyDown={
+        interactive
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                onSelect?.()
+              }
+            }
+          : undefined
+      }
       className={cn(
         'rounded-xl border border-stone-200/90 border-l-[3px] p-4 transition-shadow sm:p-5',
         card.border,
         card.bg,
         closed && CLOSED_CARD_OVERLAY,
-        !dissolving && 'hover:shadow-[0_2px_8px_rgba(15,15,15,0.06)]',
+        interactive && 'cursor-pointer hover:shadow-[0_2px_8px_rgba(15,15,15,0.06)] active:scale-[0.995]',
+        !interactive && !dissolving && 'hover:shadow-[0_2px_8px_rgba(15,15,15,0.06)]',
         dissolving && 'pointer-events-none',
       )}
     >
@@ -106,7 +129,10 @@ export function OpportunityCard({ opportunity, status, index = 0, dissolving }: 
           {hasLongDesc && (
             <button
               type="button"
-              onClick={() => setDescExpanded((v) => !v)}
+              onClick={(e) => {
+                e.stopPropagation()
+                setDescExpanded((v) => !v)
+              }}
               className="mt-1 cursor-pointer text-xs font-medium text-stone-600 underline-offset-2 hover:text-stone-900 hover:underline"
             >
               {descExpanded ? '收起说明' : '展开说明'}
@@ -124,7 +150,10 @@ export function OpportunityCard({ opportunity, status, index = 0, dissolving }: 
             <div className="mt-3">
               <button
                 type="button"
-                onClick={() => setAltExpanded((v) => !v)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setAltExpanded((v) => !v)
+                }}
                 className="flex w-full cursor-pointer items-center justify-between rounded-lg bg-white/80 px-3 py-2 text-left text-xs font-medium text-stone-600 ring-1 ring-stone-200/80 transition-colors hover:bg-stone-50"
               >
                 <span>{altLabel}</span>

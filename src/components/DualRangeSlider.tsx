@@ -36,7 +36,7 @@ export function DualRangeSlider({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between text-sm">
-        <span className="font-serif text-2xl font-semibold tabular-nums text-stone-900">
+        <span className="font-serif text-xl font-semibold tabular-nums text-stone-900 sm:text-2xl">
           {lo}
           <span className="mx-1.5 font-sans text-stone-400">—</span>
           {hi}

@@ -136,7 +136,7 @@ export function Controls({
       onCommit={onRangeCommit}
     />
   ) : (
-    <div className="flex min-w-0 flex-1 items-center gap-3">
+    <div className="flex min-w-0 w-full flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
       <input
         id={compact ? 'age-slider-desktop' : 'age-slider'}
         type="range"
@@ -211,8 +211,8 @@ export function Controls({
           {rangeMode ? '拖动选择区间' : '拖动调整年龄（松手后生效）'}
         </label>
       )}
-      <div className="flex w-full min-w-0 flex-wrap items-center gap-3">
-        <div className="min-w-0 flex-1">{ageControl}</div>
+      <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="min-w-0 w-full sm:min-w-[12rem] sm:flex-1">{ageControl}</div>
         {toggles}
       </div>
     </div>
@@ -228,7 +228,7 @@ export function Controls({
             <Filter className="h-3.5 w-3.5" />
             类别
           </div>
-          <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="-mx-1 flex flex-wrap gap-2 px-1 pb-1">
             <Chip
               active={category === 'all'}
               onClick={() => onCategoryChange('all')}
