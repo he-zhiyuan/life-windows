@@ -59,7 +59,7 @@ export function CardCanvas({
         <motion.div
           initial={{ opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-2 shrink-0 rounded-lg bg-stone-800/90 px-3 py-2 text-center text-xs font-medium text-amber-100/95"
+          className="mb-2 shrink-0 rounded-lg border border-stone-200/90 bg-stone-50 px-3 py-2 text-center text-xs font-medium text-stone-700"
         >
           {phaseLabel}
         </motion.div>

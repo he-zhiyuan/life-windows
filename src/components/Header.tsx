@@ -9,8 +9,8 @@ export function Header() {
       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
       className="text-center"
     >
-      <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-100 to-stone-100 shadow-inner ring-1 ring-white/80">
-        <Hourglass className="h-7 w-7 text-amber-700/90" strokeWidth={1.5} />
+      <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-xl border border-stone-200/90 bg-stone-50">
+        <Hourglass className="h-7 w-7 text-stone-700" strokeWidth={1.5} />
       </div>
       <h1 className="font-serif text-4xl font-semibold tracking-tight text-stone-900 sm:text-5xl">
         时光窗口

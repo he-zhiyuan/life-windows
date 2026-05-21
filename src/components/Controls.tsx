@@ -3,6 +3,7 @@ import type { PointerEvent as ReactPointerEvent, ReactNode } from 'react'
 import { Filter, Layers, Sparkles } from 'lucide-react'
 import type { Category } from '../types'
 import { CATEGORY_LABELS } from '../types'
+import { FILTER_CHIP_CLASS } from '../lib/category-style'
 import { setAgeSliderDragging } from '../lib/age-slider-cursor'
 import { cn } from '../lib/cn'
 import { DualRangeSlider } from './DualRangeSlider'
@@ -228,7 +229,11 @@ export function Controls({
             类别
           </div>
           <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <Chip active={category === 'all'} onClick={() => onCategoryChange('all')} disabled={disabled}>
+            <Chip
+              active={category === 'all'}
+              onClick={() => onCategoryChange('all')}
+              disabled={disabled}
+            >
               全部
             </Chip>
             {categories.map(([key, label]) => (
@@ -252,7 +257,12 @@ export function Controls({
       <div className="w-full space-y-3" aria-label="筛选与控制">
         {inner}
         <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <Chip active={category === 'all'} onClick={() => onCategoryChange('all')} small disabled={disabled}>
+          <Chip
+            active={category === 'all'}
+            onClick={() => onCategoryChange('all')}
+            small
+            disabled={disabled}
+          >
             全部
           </Chip>
           {categories.map(([key, label]) => (
@@ -303,11 +313,9 @@ function Chip({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        'shrink-0 rounded-full transition-all duration-200',
+        'shrink-0 rounded-full ring-1 transition-all duration-200',
         small ? 'px-2.5 py-1 text-xs' : 'px-3 py-1.5 text-sm',
-        active
-          ? 'bg-amber-700 text-white shadow-sm'
-          : 'bg-stone-100/90 text-stone-600 ring-1 ring-stone-200/50 hover:bg-stone-200/80',
+        active ? FILTER_CHIP_CLASS.active : FILTER_CHIP_CLASS.inactive,
         !disabled && 'cursor-pointer',
         disabled && 'cursor-not-allowed opacity-50',
       )}

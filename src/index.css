@@ -3,11 +3,11 @@
 @theme {
   --font-sans: 'Noto Sans SC', ui-sans-serif, system-ui, sans-serif;
   --font-serif: 'Noto Serif SC', ui-serif, Georgia, serif;
-  --color-canvas: #f5f3ef;
-  --color-ink: #1c1917;
+  --color-canvas: #ffffff;
+  --color-ink: #37352f;
   --color-muted: #78716c;
-  --color-accent: #b45309;
-  --color-accent-soft: #fff7ed;
+  --color-accent: #37352f;
+  --color-accent-soft: #f7f6f3;
 }
 
 @layer base {
@@ -18,16 +18,13 @@
   }
 
   body {
-    @apply min-h-screen font-sans text-stone-900 antialiased;
+    @apply min-h-screen font-sans text-stone-800 antialiased;
     background-color: var(--color-canvas);
-    background-image:
-      radial-gradient(ellipse 80% 50% at 50% -10%, rgba(251, 191, 36, 0.12), transparent),
-      radial-gradient(ellipse 60% 40% at 100% 0%, rgba(120, 113, 108, 0.06), transparent),
-      radial-gradient(ellipse 50% 30% at 0% 100%, rgba(180, 83, 9, 0.05), transparent);
+    background-image: none;
   }
 
   ::selection {
-    @apply bg-amber-200/60 text-stone-900;
+    @apply bg-stone-200 text-stone-900;
   }
 
   /* 可点击元素默认手型，与 hover 一致 */
@@ -47,19 +44,19 @@
 
 @layer utilities {
   .glass-panel {
-    @apply rounded-2xl border border-white/60 bg-white/70 shadow-[0_8px_32px_rgba(28,25,23,0.06)] backdrop-blur-xl;
+    @apply rounded-xl border border-stone-200/90 bg-white shadow-[0_1px_3px_rgba(15,15,15,0.06)];
   }
 
   .slider-track {
-    @apply h-2.5 w-full min-w-[12rem] cursor-pointer appearance-none rounded-full bg-stone-200/80;
+    @apply h-2.5 w-full min-w-[12rem] cursor-pointer appearance-none rounded-full bg-stone-200;
   }
 
   .slider-track::-webkit-slider-thumb {
-    @apply h-5 w-5 cursor-pointer appearance-none rounded-full border-2 border-stone-800/80 bg-amber-500 shadow-[0_1px_6px_rgba(28,25,23,0.35)] ring-2 ring-white transition-transform active:scale-110 active:bg-amber-600;
+    @apply h-5 w-5 cursor-pointer appearance-none rounded-full border-2 border-white bg-stone-800 shadow-[0_1px_4px_rgba(15,15,15,0.2)] ring-1 ring-stone-300 transition-transform active:scale-110 active:bg-stone-900;
   }
 
   .slider-track::-moz-range-thumb {
-    @apply h-5 w-5 cursor-pointer rounded-full border-2 border-stone-800/80 bg-amber-500 shadow-[0_1px_6px_rgba(28,25,23,0.35)] ring-2 ring-white;
+    @apply h-5 w-5 cursor-pointer rounded-full border-2 border-white bg-stone-800 shadow-[0_1px_4px_rgba(15,15,15,0.2)] ring-1 ring-stone-300;
   }
 
   .dual-thumb {
@@ -67,14 +64,13 @@
   }
 
   .dual-thumb::-webkit-slider-thumb {
-    @apply pointer-events-auto h-5 w-5 cursor-pointer appearance-none rounded-full border-2 border-stone-800/80 bg-amber-500 shadow-[0_1px_6px_rgba(28,25,23,0.35)] ring-2 ring-white active:scale-110;
+    @apply pointer-events-auto h-5 w-5 cursor-pointer appearance-none rounded-full border-2 border-white bg-stone-800 shadow-[0_1px_4px_rgba(15,15,15,0.2)] ring-1 ring-stone-300 active:scale-110;
   }
 
   .dual-thumb::-moz-range-thumb {
-    @apply pointer-events-auto h-5 w-5 cursor-pointer rounded-full border-2 border-stone-800/80 bg-amber-500 shadow-[0_1px_6px_rgba(28,25,23,0.35)] ring-2 ring-white;
+    @apply pointer-events-auto h-5 w-5 cursor-pointer rounded-full border-2 border-white bg-stone-800 shadow-[0_1px_4px_rgba(15,15,15,0.2)] ring-1 ring-stone-300;
   }
 
-  /* 拖动时保持链接式手型，避免移出滑条后变回系统 grab */
   body.age-slider-dragging,
   body.age-slider-dragging * {
     cursor: pointer !important;

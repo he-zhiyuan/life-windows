@@ -53,11 +53,17 @@ export function Section({
       <div className="mb-3 flex items-start gap-3">
         <div
           className={cn(
-            'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg',
+            'relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg',
             styles.iconBg,
           )}
         >
           <CircleDot className="h-4 w-4" strokeWidth={2.5} />
+          <span
+            className={cn(
+              'absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-white',
+              styles.dot,
+            )}
+          />
         </div>
         <div className="min-w-0 flex-1">
           <h2 className={cn('font-serif text-lg font-semibold sm:text-xl', styles.accent)}>
@@ -124,7 +130,7 @@ export function Section({
                   className={cn(
                     isWaiting && 'opacity-75',
                     isPausedNext &&
-                      'rounded-xl ring-2 ring-amber-500/80 ring-offset-2 shadow-[0_0_16px_rgba(245,158,11,0.35)]',
+                      'rounded-xl ring-2 ring-stone-400/80 ring-offset-2',
                   )}
                 >
                   {card}

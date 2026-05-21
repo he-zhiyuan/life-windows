@@ -47,7 +47,7 @@ export function DualRangeSlider({
       <div className="relative h-8">
         <div className="absolute top-1/2 h-2 w-full -translate-y-1/2 rounded-full bg-stone-200/80" />
         <div
-          className="absolute top-1/2 h-2 -translate-y-1/2 rounded-full bg-gradient-to-r from-amber-500 to-amber-400"
+          className="absolute top-1/2 h-2 -translate-y-1/2 rounded-full bg-stone-700"
           style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
         />
         <input

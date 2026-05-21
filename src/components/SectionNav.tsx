@@ -3,9 +3,9 @@ import { cn } from '../lib/cn'
 
 const TONE_DOT: Record<SummaryItem['tone'], string> = {
   open: 'bg-emerald-500',
-  closing: 'bg-amber-500',
+  closing: 'bg-orange-500',
   closed: 'bg-stone-400',
-  upcoming: 'bg-sky-500',
+  upcoming: 'bg-blue-500',
   neutral: 'bg-stone-400',
 }
 

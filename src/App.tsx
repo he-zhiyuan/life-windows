@@ -221,7 +221,7 @@ export default function App() {
         </header>
 
         <div className="flex min-h-0 flex-1 gap-4 px-6 py-4">
-          <aside className="flex w-52 shrink-0 flex-col gap-3 xl:w-56">
+          <aside className="flex w-52 min-w-0 shrink-0 flex-col gap-3 xl:w-56">
             <AgeHero
               compact
               age={previewAge}
@@ -230,6 +230,7 @@ export default function App() {
               rangeEnd={rangeEnd}
             />
             <SummaryStrip
+              layout="stack"
               items={navItems}
               summary="开启「仅可做」后松手将隐藏新关闭的窗口 · 点击卡片查看详情"
               interactive={false}
@@ -277,7 +278,7 @@ export default function App() {
             />
             <Controls {...controlProps} />
             {phaseLabel(phase, dissolveProgress) && (
-              <p className="rounded-lg bg-stone-800 px-3 py-2 text-center text-sm text-amber-100">
+              <p className="rounded-lg border border-stone-200/90 bg-stone-50 px-3 py-2 text-center text-sm text-stone-700">
                 {phaseLabel(phase, dissolveProgress)}
               </p>
             )}

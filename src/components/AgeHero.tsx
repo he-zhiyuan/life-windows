@@ -29,18 +29,10 @@ export function AgeHero({ age, rangeMode, rangeStart, rangeEnd, compact }: Props
   return (
     <div
       className={cn(
-        'relative overflow-hidden rounded-2xl bg-gradient-to-br from-stone-800 to-stone-900 text-white shadow-xl shadow-stone-900/20',
+        'relative overflow-hidden rounded-xl border border-stone-200/90 bg-white text-stone-900 shadow-[0_1px_3px_rgba(15,15,15,0.06)]',
         compact ? 'px-4 py-4' : 'px-6 py-8',
       )}
     >
-      <div
-        className="pointer-events-none absolute inset-0 opacity-30"
-        style={{
-          background:
-            'radial-gradient(circle at 70% 20%, rgba(251,191,36,0.4), transparent 50%)',
-        }}
-      />
-
       <div className="relative">
         <p className="text-[10px] font-medium uppercase tracking-[0.15em] text-stone-400">
           {rangeMode ? '探索区间' : '当前年龄'}
@@ -76,15 +68,15 @@ export function AgeHero({ age, rangeMode, rangeStart, rangeEnd, compact }: Props
             </span>
           </motion.p>
         )}
-        <p className={cn('text-stone-400', compact ? 'mt-1 text-xs' : 'mt-2 text-sm')}>
+        <p className={cn('text-stone-500', compact ? 'mt-1 text-xs' : 'mt-2 text-sm')}>
           {rangeMode ? '区间一览' : getPhase(age)}
         </p>
       </div>
 
       <div className={cn('relative', compact ? 'mt-3' : 'mt-6')}>
-        <div className="h-1 overflow-hidden rounded-full bg-stone-700/80">
+        <div className="h-1 overflow-hidden rounded-full bg-stone-200">
           <motion.div
-            className="h-full rounded-full bg-gradient-to-r from-amber-600 to-amber-400"
+            className="h-full rounded-full bg-stone-800"
             initial={false}
             animate={{ width: `${percent}%` }}
             transition={{ type: 'spring', stiffness: 120, damping: 20 }}
@@ -92,7 +84,7 @@ export function AgeHero({ age, rangeMode, rangeStart, rangeEnd, compact }: Props
         </div>
         <motion.div
           className={cn(
-            'absolute top-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-amber-500 shadow-lg',
+            'absolute top-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-stone-800 shadow-sm ring-1 ring-stone-300',
             compact ? 'h-2.5 w-2.5' : 'h-3.5 w-3.5',
           )}
           initial={false}
