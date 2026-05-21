@@ -20,6 +20,16 @@ npm run build    # 📦 生产构建
 npm run preview  # 👀 预览 dist
 ```
 
+### ☁️ 部署到 Cloudflare Pages
+
+| 项 | 值 |
+|:---|:---|
+| 构建命令 | `npm run build` |
+| 输出目录 | **`dist`**（不要用仓库根目录） |
+| Node 版本 | `20`（环境变量 `NODE_VERSION=20` 或 Dashboard 选 20） |
+
+构建成功后，`dist/index.html` 应引用 `/assets/index-*.js`，**不能**仍是 `/src/main.tsx`。若浏览器报 MIME `application/octet-stream`，多半是未发布 `dist` 或构建失败却用了根目录 `index.html`。仓库已含 `wrangler.toml` 与 `public/_headers`（构建时复制到 `dist`）以辅助 MIME。
+
 ---
 
 ## 📚 文档（给人类和 AI）

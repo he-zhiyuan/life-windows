@@ -274,7 +274,13 @@ npm run build   # tsc -b && vite build → dist/
 npm run preview # 本地预览 dist
 ```
 
-环境要求：Node 18+，npm。
+环境要求：Node 20（见 `package.json` engines），npm。
+
+### Cloudflare Pages
+
+- **输出目录必须为 `dist`**，否则会部署开发版 `index.html`（`/src/main.tsx`），触发模块 MIME 错误。
+- 根目录 `wrangler.toml` 声明 `pages_build_output_dir = "dist"`。
+- `public/_headers` 在构建后位于 `dist/_headers`，为 `.js` 等资源设置 `text/javascript`。
 
 ---
 
