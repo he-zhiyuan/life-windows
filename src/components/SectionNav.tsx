@@ -37,7 +37,7 @@ export function SectionNav({ items }: Props) {
               className={cn(
                 'flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors',
                 item.value > 0
-                  ? 'text-stone-700 hover:bg-stone-100/80'
+                  ? 'cursor-pointer text-stone-700 hover:bg-stone-100/80'
                   : 'cursor-default text-stone-400',
               )}
             >

@@ -30,7 +30,7 @@ export function DetailOverlay({ opportunity, status, onClose }: Props) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 bg-stone-900/25 backdrop-blur-[2px] lg:bg-stone-900/15"
+            className="fixed inset-0 z-40 cursor-pointer bg-stone-900/25 backdrop-blur-[2px] lg:bg-stone-900/15"
             onClick={onClose}
             aria-hidden
           />
@@ -51,7 +51,7 @@ export function DetailOverlay({ opportunity, status, onClose }: Props) {
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-lg p-2 text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-800"
+                className="cursor-pointer rounded-lg p-2 text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-800"
                 aria-label="关闭"
               >
                 <X className="h-5 w-5" />

@@ -68,8 +68,10 @@ export function CompactCard({
           'ring-2 ring-amber-400/70 ring-offset-1 shadow-[0_0_12px_rgba(251,191,36,0.35)]',
         pausedNext &&
           'ring-2 ring-amber-500/80 ring-offset-2 shadow-[0_0_16px_rgba(245,158,11,0.45)]',
-        (dissolving || waitingDissolve) && 'pointer-events-none',
-        !dissolving && !waitingDissolve && 'hover:shadow-md hover:shadow-stone-900/8',
+        (dissolving || waitingDissolve) && 'pointer-events-none cursor-not-allowed',
+        !dissolving &&
+          !waitingDissolve &&
+          'cursor-pointer hover:shadow-md hover:shadow-stone-900/8',
       )}
     >
       <div className="flex items-start justify-between gap-1">

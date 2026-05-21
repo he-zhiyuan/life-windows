@@ -3,6 +3,7 @@ import type { PointerEvent as ReactPointerEvent, ReactNode } from 'react'
 import { Filter, Layers, Sparkles } from 'lucide-react'
 import type { Category } from '../types'
 import { CATEGORY_LABELS } from '../types'
+import { setAgeSliderDragging } from '../lib/age-slider-cursor'
 import { cn } from '../lib/cn'
 import { DualRangeSlider } from './DualRangeSlider'
 
@@ -57,6 +58,7 @@ function Toggle({
         checked
           ? 'bg-stone-900 text-white shadow-md'
           : 'bg-stone-100/80 text-stone-600 hover:bg-stone-200/80',
+        !disabled && 'cursor-pointer',
         disabled && 'cursor-not-allowed opacity-50',
       )}
     >
@@ -101,115 +103,123 @@ export function Controls({
   disabled,
   compact,
 }: Props) {
+  const toggles = (
+    <div className="flex shrink-0 flex-wrap items-center gap-2">
+      <Toggle
+        checked={rangeMode}
+        onChange={onRangeModeChange}
+        label="区间"
+        icon={Layers}
+        small={compact}
+        disabled={disabled}
+      />
+      <Toggle
+        checked={onlyActionable}
+        onChange={onOnlyActionableChange}
+        label="仅可做"
+        icon={Sparkles}
+        small={compact}
+        disabled={disabled}
+      />
+    </div>
+  )
+
+  const ageControl = rangeMode ? (
+    <DualRangeSlider
+      min={0}
+      max={80}
+      start={rangeStart}
+      end={rangeEnd}
+      onStartChange={onRangeStartChange}
+      onEndChange={onRangeEndChange}
+      onCommit={onRangeCommit}
+    />
+  ) : (
+    <div className="flex min-w-0 flex-1 items-center gap-3">
+      <input
+        id={compact ? 'age-slider-desktop' : 'age-slider'}
+        type="range"
+        min={0}
+        max={80}
+        step={1}
+        value={age}
+        disabled={disabled}
+        onChange={(e) => onAgePreview(Number(e.target.value))}
+        onPointerDown={(e) => {
+          e.currentTarget.setPointerCapture(e.pointerId)
+          setAgeSliderDragging(true)
+          onAgeDragStart?.()
+        }}
+        onPointerUp={(e) => {
+          const value = Number(e.currentTarget.value)
+          setAgeSliderDragging(false)
+          onAgeDragEnd?.()
+          commitSlider(e, value, onAgeCommit)
+        }}
+        onPointerCancel={(e) => {
+          releaseSliderCapture(e)
+          setAgeSliderDragging(false)
+          onAgeDragEnd?.()
+        }}
+        onKeyUp={(e) => {
+          if (e.key === 'Enter') onAgeCommit(Number(e.currentTarget.value))
+        }}
+        className={cn('slider-track min-w-0 flex-1', compact && 'min-w-[10rem]')}
+      />
+      {!compact && (
+        <div className="flex shrink-0 items-baseline gap-1 rounded-xl bg-stone-100/90 px-2.5 py-1.5 ring-1 ring-stone-200/60">
+          <input
+            type="number"
+            min={0}
+            max={80}
+            step={1}
+            value={age}
+            disabled={disabled}
+            onChange={(e) => {
+              const v = Math.min(80, Math.max(0, Number(e.target.value) || 0))
+              onAgePreview(v)
+            }}
+            onBlur={(e) => onAgeCommit(Number(e.target.value) || 0)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                onAgeCommit(Number(e.currentTarget.value) || 0)
+                e.currentTarget.blur()
+              }
+            }}
+            className="w-9 bg-transparent text-center font-serif text-lg font-semibold text-stone-900 outline-none"
+            aria-label="年龄数字输入"
+          />
+          <span className="text-xs text-stone-400">岁</span>
+        </div>
+      )}
+      {compact && (
+        <span className="shrink-0 font-serif text-lg font-semibold tabular-nums text-stone-800">
+          {age} 岁
+        </span>
+      )}
+    </div>
+  )
+
+  const controlRow = (
+    <div className="w-full">
+      {!compact && (
+        <label
+          htmlFor={rangeMode ? undefined : 'age-slider'}
+          className="mb-2.5 block text-xs font-semibold uppercase tracking-wider text-stone-400"
+        >
+          {rangeMode ? '拖动选择区间' : '拖动调整年龄（松手后生效）'}
+        </label>
+      )}
+      <div className="flex w-full min-w-0 flex-wrap items-center gap-3">
+        <div className="min-w-0 flex-1">{ageControl}</div>
+        {toggles}
+      </div>
+    </div>
+  )
+
   const inner = (
     <>
-      <div className={cn(compact && 'flex flex-wrap items-center gap-3')}>
-        <div className={cn(compact ? 'min-w-[12rem] flex-1' : 'w-full')}>
-          {!compact && (
-            <label
-              htmlFor={rangeMode ? undefined : 'age-slider'}
-              className="mb-2.5 block text-xs font-semibold uppercase tracking-wider text-stone-400"
-            >
-              {rangeMode ? '拖动选择区间' : '拖动调整年龄（松手后生效）'}
-            </label>
-          )}
-
-          {rangeMode ? (
-            <DualRangeSlider
-              min={0}
-              max={80}
-              start={rangeStart}
-              end={rangeEnd}
-              onStartChange={onRangeStartChange}
-              onEndChange={onRangeEndChange}
-              onCommit={onRangeCommit}
-            />
-          ) : (
-            <div className="flex items-center gap-2">
-              <input
-                id={compact ? 'age-slider-desktop' : 'age-slider'}
-                type="range"
-                min={0}
-                max={80}
-                value={age}
-                disabled={disabled}
-                onChange={(e) => onAgePreview(Number(e.target.value))}
-                onPointerDown={(e) => {
-                  e.currentTarget.setPointerCapture(e.pointerId)
-                  onAgeDragStart?.()
-                }}
-                onPointerUp={(e) => {
-                  const value = Number(e.currentTarget.value)
-                  onAgeDragEnd?.()
-                  commitSlider(e, value, onAgeCommit)
-                }}
-                onPointerCancel={(e) => {
-                  releaseSliderCapture(e)
-                  onAgeDragEnd?.()
-                }}
-                onKeyUp={(e) => {
-                  if (e.key === 'Enter') onAgeCommit(Number(e.currentTarget.value))
-                }}
-                className="slider-track flex-1"
-              />
-              {!compact && (
-                <div className="flex items-baseline gap-1 rounded-xl bg-stone-100/90 px-2.5 py-1.5 ring-1 ring-stone-200/60">
-                  <input
-                    type="number"
-                    min={0}
-                    max={80}
-                    value={age}
-                    disabled={disabled}
-                    onChange={(e) => {
-                      const v = Math.min(80, Math.max(0, Number(e.target.value) || 0))
-                      onAgePreview(v)
-                    }}
-                    onBlur={(e) => onAgeCommit(Number(e.target.value) || 0)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        onAgeCommit(Number(e.currentTarget.value) || 0)
-                        e.currentTarget.blur()
-                      }
-                    }}
-                    className="w-9 bg-transparent text-center font-serif text-lg font-semibold text-stone-900 outline-none"
-                    aria-label="年龄数字输入"
-                  />
-                  <span className="text-xs text-stone-400">岁</span>
-                </div>
-              )}
-              {compact && (
-                <span className="shrink-0 font-serif text-lg font-semibold tabular-nums text-stone-800">
-                  {age} 岁
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-
-        <div
-          className={cn(
-            'flex flex-wrap gap-2',
-            !compact && 'border-t border-stone-200/60 pt-3',
-          )}
-        >
-          <Toggle
-            checked={rangeMode}
-            onChange={onRangeModeChange}
-            label="区间"
-            icon={Layers}
-            small={compact}
-            disabled={disabled}
-          />
-          <Toggle
-            checked={onlyActionable}
-            onChange={onOnlyActionableChange}
-            label="仅可做"
-            icon={Sparkles}
-            small={compact}
-            disabled={disabled}
-          />
-        </div>
-      </div>
+      {controlRow}
 
       {!compact && (
         <div className="border-t border-stone-200/60 pt-3">
@@ -239,7 +249,7 @@ export function Controls({
 
   if (compact) {
     return (
-      <div className="space-y-2" aria-label="筛选与控制">
+      <div className="w-full space-y-3" aria-label="筛选与控制">
         {inner}
         <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <Chip active={category === 'all'} onClick={() => onCategoryChange('all')} small disabled={disabled}>
@@ -298,6 +308,7 @@ function Chip({
         active
           ? 'bg-amber-700 text-white shadow-sm'
           : 'bg-stone-100/90 text-stone-600 ring-1 ring-stone-200/50 hover:bg-stone-200/80',
+        !disabled && 'cursor-pointer',
         disabled && 'cursor-not-allowed opacity-50',
       )}
     >

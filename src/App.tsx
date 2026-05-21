@@ -215,7 +215,7 @@ export default function App() {
               </h1>
               <p className="mt-0.5 text-xs text-stone-500">{summary}</p>
             </div>
-            <div className="w-full max-w-md">
+            <div className="min-w-0 w-full max-w-3xl flex-1">
               <Controls compact {...controlProps} />
             </div>
           </div>
@@ -230,7 +230,11 @@ export default function App() {
               rangeStart={rangeStart}
               rangeEnd={rangeEnd}
             />
-            <SummaryStrip items={navItems} summary="开启「仅可做」后松手将隐藏新关闭的窗口 · 点击查看详情" />
+            <SummaryStrip
+              items={navItems}
+              summary="开启「仅可做」后松手将隐藏新关闭的窗口 · 点击卡片查看详情"
+              interactive={false}
+            />
           </aside>
 
           <main className="min-h-0 min-w-0 flex-1">

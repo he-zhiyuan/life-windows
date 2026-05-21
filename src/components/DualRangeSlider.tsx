@@ -1,3 +1,5 @@
+import { setAgeSliderDragging } from '../lib/age-slider-cursor'
+
 type Props = {
   min: number
   max: number
@@ -17,7 +19,14 @@ export function DualRangeSlider({
   onEndChange,
   onCommit,
 }: Props) {
-  const handlePointerUp = () => onCommit?.()
+  const handlePointerDown = () => setAgeSliderDragging(true)
+
+  const handlePointerUp = () => {
+    setAgeSliderDragging(false)
+    onCommit?.()
+  }
+
+  const handlePointerCancel = () => setAgeSliderDragging(false)
   const lo = Math.min(start, end)
   const hi = Math.max(start, end)
   const span = max - min || 1
@@ -53,7 +62,9 @@ export function DualRangeSlider({
           }}
           className="dual-thumb absolute inset-0 z-10 w-full"
           aria-label="区间起始年龄"
+          onPointerDown={handlePointerDown}
           onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerCancel}
         />
         <input
           type="range"
@@ -67,7 +78,9 @@ export function DualRangeSlider({
           }}
           className="dual-thumb absolute inset-0 z-20 w-full"
           aria-label="区间结束年龄"
+          onPointerDown={handlePointerDown}
           onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerCancel}
         />
       </div>
 
