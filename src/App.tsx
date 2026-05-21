@@ -30,7 +30,7 @@ function loadAge(): number {
   } catch {
     /* ignore */
   }
-  return 25
+  return 18
 }
 
 function phaseLabel(
@@ -235,7 +235,7 @@ export default function App() {
             <SummaryStrip
               layout="stack"
               items={navItems}
-              summary="开启「仅可做」后松手将隐藏新关闭的窗口 · 点击卡片查看详情"
+              summary="开启「隐藏已关窗口」后松手将隐藏新关闭的窗口 · 点击卡片查看详情"
               interactive={false}
             />
             <Footer variant="sidebar" />

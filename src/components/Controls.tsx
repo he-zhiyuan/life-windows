@@ -117,7 +117,7 @@ export function Controls({
       <Toggle
         checked={onlyActionable}
         onChange={onOnlyActionableChange}
-        label="仅可做"
+        label="隐藏已关窗口"
         icon={Sparkles}
         small={compact}
         disabled={disabled}
