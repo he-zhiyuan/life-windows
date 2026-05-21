@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { opportunities } from './data/opportunities'
 import type { Category } from './types'
 import { AgeHero } from './components/AgeHero'
+import { BackToTop } from './components/BackToTop'
 import { CardCanvas } from './components/CardCanvas'
 import { Controls } from './components/Controls'
 import { DetailOverlay } from './components/DetailOverlay'
@@ -221,7 +222,7 @@ export default function App() {
         </header>
 
         <div className="flex min-h-0 flex-1 gap-4 px-6 py-4">
-          <aside className="flex w-52 min-w-0 shrink-0 flex-col gap-3 xl:w-56">
+          <aside className="flex h-full min-h-0 w-52 shrink-0 flex-col gap-3 xl:w-56">
             <AgeHero
               compact
               age={previewAge}
@@ -235,6 +236,7 @@ export default function App() {
               summary="开启「仅可做」后松手将隐藏新关闭的窗口 · 点击卡片查看详情"
               interactive={false}
             />
+            <Footer variant="sidebar" />
           </aside>
 
           <main className="min-h-0 min-w-0 flex-1">
@@ -333,6 +335,7 @@ export default function App() {
 
           <Footer />
         </div>
+        <BackToTop />
       </div>
     </div>
   )

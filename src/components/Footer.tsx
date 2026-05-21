@@ -1,18 +1,38 @@
-import { Shield } from 'lucide-react'
+import { SITE_CREATOR, SITE_NAME } from '../lib/site'
+import { cn } from '../lib/cn'
 
-export function Footer() {
+type Props = {
+  /** 桌面左栏：紧凑样式并贴底 */
+  variant?: 'page' | 'sidebar'
+}
+
+export function Footer({ variant = 'page' }: Props) {
+  const year = new Date().getFullYear()
+  const isSidebar = variant === 'sidebar'
+
   return (
-    <footer className="mt-16 rounded-2xl border border-stone-200/60 bg-white/50 px-5 py-6 text-sm text-stone-500 backdrop-blur-sm">
-      <div className="flex gap-3">
-        <Shield className="mt-0.5 h-4 w-4 shrink-0 text-stone-400" strokeWidth={1.75} />
-        <div>
-          <p className="leading-relaxed">
-            <span className="font-medium text-stone-600">免责声明：</span>
-            本站内容为基于公开资料与常识整理的人生阶段参考，不构成医疗、法律或投资建议。个体差异极大，请以自身情况与专业人士意见为准。
-          </p>
-          <p className="mt-3 text-xs text-stone-400">时光窗口 MVP v0.1</p>
-        </div>
-      </div>
+    <footer
+      className={cn(
+        'text-stone-500',
+        isSidebar
+          ? 'mt-auto shrink-0 rounded-lg border border-stone-200/80 bg-white px-3 py-3 text-xs leading-relaxed'
+          : 'mt-12 border-t border-stone-200/80 pt-6 text-center text-xs leading-relaxed sm:mt-16',
+      )}
+    >
+      <p className={cn(isSidebar ? 'text-stone-600' : 'text-stone-500')}>
+        © {year} {SITE_NAME}
+      </p>
+      <p className="mt-1.5">
+        <span className="text-stone-400">Creator · </span>
+        <a
+          href={SITE_CREATOR.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-medium text-blue-700 underline underline-offset-[3px] transition-[color,font-style] duration-150 hover:text-blue-900 hover:italic focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 focus-visible:ring-offset-1"
+        >
+          {SITE_CREATOR.name}
+        </a>
+      </p>
     </footer>
   )
 }
