@@ -1,10 +1,15 @@
 import { AnimatePresence } from 'framer-motion'
 import { CircleDot } from 'lucide-react'
+import type { DissolvePhase } from '../hooks/useDissolveSequence'
 import type { Opportunity, WindowStatus } from '../types'
 import { SECTION_STYLES } from '../lib/category-style'
 import { cn } from '../lib/cn'
 import { OpportunityCard } from './OpportunityCard'
-import { SoulDissolveWrapper } from './SoulDissolveWrapper'
+import {
+  DEFAULT_DISSOLVE_DURATION,
+  FIRST_DISSOLVE_DURATION,
+  SoulDissolveWrapper,
+} from './SoulDissolveWrapper'
 
 type Item = Opportunity & { status: WindowStatus }
 
@@ -19,6 +24,9 @@ type Props = {
   vanishedIds?: Set<string>
   pendingDissolveIds?: Set<string>
   onDissolveComplete?: (id: string) => void
+  dissolveDoneCount?: number
+  dissolvePhase?: DissolvePhase
+  upcomingDissolveId?: string | null
 }
 
 export function Section({
@@ -32,6 +40,9 @@ export function Section({
   vanishedIds = new Set(),
   pendingDissolveIds = new Set(),
   onDissolveComplete,
+  dissolveDoneCount = 0,
+  dissolvePhase = 'idle',
+  upcomingDissolveId = null,
 }: Props) {
   const styles = SECTION_STYLES[tone]
 
@@ -72,7 +83,12 @@ export function Section({
               const isVanished = vanishedIds.has(item.id)
               const isActive = activeDissolveId === item.id
               const isWaiting =
-                pendingDissolveIds.has(item.id) && !isVanished && !isActive
+                dissolvePhase === 'dissolving' &&
+                pendingDissolveIds.has(item.id) &&
+                !isVanished &&
+                !isActive
+              const isPausedNext =
+                dissolvePhase === 'queued' && upcomingDissolveId === item.id
 
               if (isVanished) return null
 
@@ -90,6 +106,11 @@ export function Section({
                   <SoulDissolveWrapper
                     key={item.id}
                     seed={item.id}
+                    duration={
+                      dissolveDoneCount === 0
+                        ? FIRST_DISSOLVE_DURATION
+                        : DEFAULT_DISSOLVE_DURATION
+                    }
                     onComplete={() => onDissolveComplete(item.id)}
                   >
                     {card}
@@ -100,7 +121,11 @@ export function Section({
               return (
                 <div
                   key={item.id}
-                  className={cn(isWaiting && 'opacity-75')}
+                  className={cn(
+                    isWaiting && 'opacity-75',
+                    isPausedNext &&
+                      'rounded-xl ring-2 ring-amber-500/80 ring-offset-2 shadow-[0_0_16px_rgba(245,158,11,0.35)]',
+                  )}
                 >
                   {card}
                 </div>

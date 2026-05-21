@@ -9,6 +9,9 @@ type Props = {
   selected?: boolean
   dissolving?: boolean
   waitingDissolve?: boolean
+  previewClosing?: boolean
+  /** 松手后等待期内，下一张即将隐藏的卡片 */
+  pausedNext?: boolean
   layoutEnabled?: boolean
   layoutAnimating?: boolean
   onSelect: () => void
@@ -31,6 +34,8 @@ export function CompactCard({
   selected,
   dissolving,
   waitingDissolve,
+  previewClosing,
+  pausedNext,
   layoutEnabled = true,
   layoutAnimating = false,
   onSelect,
@@ -59,6 +64,10 @@ export function CompactCard({
         selected && 'ring-2 ring-amber-500/60 ring-offset-1',
         status === 'closed' && !dissolving && 'opacity-80',
         waitingDissolve && 'opacity-70 ring-1 ring-stone-300/50',
+        previewClosing &&
+          'ring-2 ring-amber-400/70 ring-offset-1 shadow-[0_0_12px_rgba(251,191,36,0.35)]',
+        pausedNext &&
+          'ring-2 ring-amber-500/80 ring-offset-2 shadow-[0_0_16px_rgba(245,158,11,0.45)]',
         (dissolving || waitingDissolve) && 'pointer-events-none',
         !dissolving && !waitingDissolve && 'hover:shadow-md hover:shadow-stone-900/8',
       )}

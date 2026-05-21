@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { opportunities } from './data/opportunities'
 import type { Category } from './types'
 import { AgeHero } from './components/AgeHero'
@@ -34,13 +34,19 @@ function loadAge(): number {
 
 function phaseLabel(
   phase: string,
-  progress: { current: number; total: number; fromAge: number; toAge: number } | null,
+  progress: {
+    step: number
+    total: number
+    fromAge: number
+    toAge: number
+  } | null,
 ): string | null {
-  if (phase === 'dissolving' && progress) {
-    return `相较 ${progress.fromAge}→${progress.toAge} 岁，${progress.total} 个新关闭窗口逐个飘散 (${progress.current}/${progress.total})`
+  if (phase === 'queued') return null
+  if (phase === 'dissolving' && progress && progress.step > 0) {
+    return `相较 ${progress.fromAge}→${progress.toAge} 岁，${progress.total} 个机会窗口关闭（${progress.step}/${progress.total}）`
   }
-  if (phase === 'dissolving') return '错过了的人生窗口，魂飞魄散…'
-  if (phase === 'rearranging') return '全部飘散完成，正在重新排列…'
+  if (phase === 'dissolving') return null
+  if (phase === 'rearranging') return null
   return null
 }
 
@@ -53,17 +59,22 @@ export default function App() {
   const [category, setCategory] = useState<Category | 'all'>('all')
   const [hideClosed, setHideClosed] = useState(false)
   const [dissolveClosed, setDissolveClosed] = useState(false)
+  const [isAgeDragging, setIsAgeDragging] = useState(false)
+  const isAgeDraggingRef = useRef(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const {
     phase,
     canvasItems,
     activeDissolveId,
+    upcomingDissolveId,
     vanishedIds,
     pendingDissolveIds,
     dissolveProgress,
     tryCommitAge,
     completeDissolve,
+    cancelSequence,
+    previewClosingIds,
     registerAgeApplied,
     layoutFrozen,
     layoutAnimating,
@@ -71,12 +82,14 @@ export default function App() {
   } = useDissolveSequence({
     opportunities,
     committedAge,
+    previewAge,
     rangeMode,
     rangeStart,
     rangeEnd,
     category,
     hideClosed,
     dissolveClosed,
+    isAgeDragging,
   })
 
   const applyCommittedAge = useCallback((age: number) => {
@@ -97,7 +110,22 @@ export default function App() {
     setPreviewAge(age)
   }
 
+  const handleAgeDragStart = () => {
+    isAgeDraggingRef.current = true
+    setIsAgeDragging(true)
+    if (phase === 'queued') {
+      cancelSequence()
+    }
+  }
+
+  const handleAgeDragEnd = () => {
+    isAgeDraggingRef.current = false
+    setIsAgeDragging(false)
+  }
+
   const handleAgeCommit = (age: number) => {
+    isAgeDraggingRef.current = false
+    setIsAgeDragging(false)
     setPreviewAge(age)
     if (tryCommitAge(age)) {
       applyCommittedAge(age)
@@ -117,7 +145,7 @@ export default function App() {
   }, [canvasItems])
 
   const mobileClosedItems = useMemo(() => {
-    if (phase === 'dissolving') {
+    if (phase === 'queued' || phase === 'dissolving') {
       return canvasItems.filter((o) => pendingDissolveIds.has(o.id))
     }
     return groups.closed
@@ -126,11 +154,11 @@ export default function App() {
   const actionable = groups.open.length + groups.closing.length
 
   const summary =
-    phase === 'dissolving' && dissolveProgress
-      ? `相较 ${dissolveProgress.fromAge} 岁新增 ${dissolveProgress.total} 个已关 · 飘散 ${dissolveProgress.current}/${dissolveProgress.total}`
-      : phase === 'rearranging'
-        ? '重新排列剩余窗口…'
-        : rangeMode
+    phase === 'queued' && dissolveProgress
+      ? `相较 ${dissolveProgress.fromAge}→${dissolveProgress.toAge} 岁，${dissolveProgress.total} 个机会窗口关闭`
+      : phase === 'dissolving' && dissolveProgress && dissolveProgress.step > 0
+      ? `相较 ${dissolveProgress.fromAge}→${dissolveProgress.toAge} 岁，${dissolveProgress.total} 个机会窗口关闭（${dissolveProgress.step}/${dissolveProgress.total}）`
+      : rangeMode
           ? `${rangeStart}–${rangeEnd} 岁 · ${canvasItems.length} 个窗口`
           : `${committedAge} 岁 · ${actionable} 个可把握 · 共 ${canvasItems.length} 张卡片`
 
@@ -162,6 +190,8 @@ export default function App() {
     age: previewAge,
     onAgePreview: handleAgePreview,
     onAgeCommit: handleAgeCommit,
+    onAgeDragStart: handleAgeDragStart,
+    onAgeDragEnd: handleAgeDragEnd,
     rangeMode,
     onRangeModeChange: setRangeMode,
     rangeStart,
@@ -204,7 +234,7 @@ export default function App() {
               rangeStart={rangeStart}
               rangeEnd={rangeEnd}
             />
-            <SummaryStrip items={navItems} summary="松手后触发飘散 · 点击查看详情" />
+            <SummaryStrip items={navItems} summary="开启后松手将隐藏新关闭的窗口 · 点击查看详情" />
           </aside>
 
           <main className="min-h-0 min-w-0 flex-1">
@@ -214,6 +244,10 @@ export default function App() {
               activeDissolveId={activeDissolveId}
               vanishedIds={vanishedIds}
               pendingDissolveIds={pendingDissolveIds}
+              previewClosingIds={previewClosingIds}
+              dissolveDoneCount={dissolveProgress?.done ?? 0}
+              dissolvePhase={phase}
+              upcomingDissolveId={upcomingDissolveId}
               layoutFrozen={layoutFrozen}
               layoutAnimating={layoutAnimating}
               phaseLabel={phaseLabel(phase, dissolveProgress)}
@@ -273,16 +307,20 @@ export default function App() {
               items={groups.upcoming}
               tone="upcoming"
             />
-            {!rangeMode && (mobileClosedItems.length > 0 || phase === 'dissolving') && (
+            {!rangeMode &&
+              (mobileClosedItems.length > 0 || phase === 'queued' || phase === 'dissolving') && (
               <Section
                 id={SECTION_IDS.closed}
                 title="已基本关闭"
-                hint={dissolveClosed ? '松手后魂飞魄散' : '可展开查看补救'}
+                hint={dissolveClosed ? '松手后隐藏新关闭的窗口' : '可展开查看补救'}
                 items={mobileClosedItems}
                 tone="closed"
                 activeDissolveId={activeDissolveId}
                 vanishedIds={vanishedIds}
                 pendingDissolveIds={pendingDissolveIds}
+                dissolveDoneCount={dissolveProgress?.done ?? 0}
+                dissolvePhase={phase}
+                upcomingDissolveId={upcomingDissolveId}
                 onDissolveComplete={completeDissolve}
               />
             )}

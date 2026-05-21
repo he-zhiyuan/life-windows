@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import type { PointerEvent as ReactPointerEvent, ReactNode } from 'react'
-import { Filter, Ghost, Layers, Sparkles } from 'lucide-react'
+import { EyeOff, Filter, Layers, Sparkles } from 'lucide-react'
 import type { Category } from '../types'
 import { CATEGORY_LABELS } from '../types'
 import { cn } from '../lib/cn'
@@ -10,6 +10,8 @@ type Props = {
   age: number
   onAgePreview: (age: number) => void
   onAgeCommit: (age: number) => void
+  onAgeDragStart?: () => void
+  onAgeDragEnd?: () => void
   rangeMode: boolean
   onRangeModeChange: (v: boolean) => void
   rangeStart: number
@@ -66,14 +68,18 @@ function Toggle({
   )
 }
 
+function releaseSliderCapture(e: ReactPointerEvent<HTMLInputElement>) {
+  if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+    e.currentTarget.releasePointerCapture(e.pointerId)
+  }
+}
+
 function commitSlider(
   e: ReactPointerEvent<HTMLInputElement>,
   value: number,
   onCommit: (age: number) => void,
 ) {
-  if (e.currentTarget.hasPointerCapture(e.pointerId)) {
-    e.currentTarget.releasePointerCapture(e.pointerId)
-  }
+  releaseSliderCapture(e)
   onCommit(value)
 }
 
@@ -81,6 +87,8 @@ export function Controls({
   age,
   onAgePreview,
   onAgeCommit,
+  onAgeDragStart,
+  onAgeDragEnd,
   rangeMode,
   onRangeModeChange,
   rangeStart,
@@ -130,7 +138,19 @@ export function Controls({
                 value={age}
                 disabled={disabled}
                 onChange={(e) => onAgePreview(Number(e.target.value))}
-                onPointerUp={(e) => commitSlider(e, Number(e.currentTarget.value), onAgeCommit)}
+                onPointerDown={(e) => {
+                  e.currentTarget.setPointerCapture(e.pointerId)
+                  onAgeDragStart?.()
+                }}
+                onPointerUp={(e) => {
+                  const value = Number(e.currentTarget.value)
+                  onAgeDragEnd?.()
+                  commitSlider(e, value, onAgeCommit)
+                }}
+                onPointerCancel={(e) => {
+                  releaseSliderCapture(e)
+                  onAgeDragEnd?.()
+                }}
                 onKeyUp={(e) => {
                   if (e.key === 'Enter') onAgeCommit(Number(e.currentTarget.value))
                 }}
@@ -201,8 +221,8 @@ export function Controls({
               onDissolveClosedChange(v)
               if (v) onHideClosedChange(false)
             }}
-            label={compact ? '灵魂飘散' : '已关飘散'}
-            icon={Ghost}
+            label="隐藏已关机会窗口"
+            icon={EyeOff}
             small={compact}
             disabled={disabled}
           />

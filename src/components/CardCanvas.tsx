@@ -1,7 +1,12 @@
 import { AnimatePresence, motion } from 'framer-motion'
+import type { DissolvePhase } from '../hooks/useDissolveSequence'
 import type { Opportunity, WindowStatus } from '../types'
 import { CompactCard } from './CompactCard'
-import { SoulDissolveWrapper } from './SoulDissolveWrapper'
+import {
+  DEFAULT_DISSOLVE_DURATION,
+  FIRST_DISSOLVE_DURATION,
+  SoulDissolveWrapper,
+} from './SoulDissolveWrapper'
 
 export type CardItem = Opportunity & { status: WindowStatus }
 
@@ -11,6 +16,11 @@ type Props = {
   activeDissolveId: string | null
   vanishedIds: Set<string>
   pendingDissolveIds: Set<string>
+  previewClosingIds?: Set<string>
+  /** 已完成隐藏数量（0-based），0 = 队列首张 */
+  dissolveDoneCount?: number
+  dissolvePhase?: DissolvePhase
+  upcomingDissolveId?: string | null
   layoutFrozen: boolean
   layoutAnimating: boolean
   phaseLabel?: string | null
@@ -24,6 +34,10 @@ export function CardCanvas({
   activeDissolveId,
   vanishedIds,
   pendingDissolveIds,
+  previewClosingIds = new Set(),
+  dissolveDoneCount = 0,
+  dissolvePhase = 'idle',
+  upcomingDissolveId = null,
   layoutFrozen,
   layoutAnimating,
   phaseLabel,
@@ -66,7 +80,12 @@ export function CardCanvas({
               const isVanished = vanishedIds.has(item.id)
               const isActive = activeDissolveId === item.id
               const isWaiting =
-                pendingDissolveIds.has(item.id) && !isVanished && !isActive
+                dissolvePhase === 'dissolving' &&
+                pendingDissolveIds.has(item.id) &&
+                !isVanished &&
+                !isActive
+              const isPausedNext =
+                dissolvePhase === 'queued' && upcomingDissolveId === item.id
 
               if (isVanished) {
                 return (
@@ -86,6 +105,8 @@ export function CardCanvas({
                   onSelect={() => onSelect(item.id)}
                   dissolving={isActive}
                   waitingDissolve={isWaiting}
+                  previewClosing={previewClosingIds.has(item.id)}
+                  pausedNext={isPausedNext}
                   layoutEnabled={!layoutFrozen}
                   layoutAnimating={layoutAnimating}
                 />
@@ -96,6 +117,11 @@ export function CardCanvas({
                   <SoulDissolveWrapper
                     key={item.id}
                     seed={item.id}
+                    duration={
+                      dissolveDoneCount === 0
+                        ? FIRST_DISSOLVE_DURATION
+                        : DEFAULT_DISSOLVE_DURATION
+                    }
                     onComplete={() => onDissolveComplete(item.id)}
                   >
                     {card}

@@ -4,7 +4,10 @@ import { getWindowStatus, overlapsRange, withStatus } from '../utils/status'
 
 export type CardItem = Opportunity & { status: WindowStatus }
 
-export type DissolvePhase = 'idle' | 'dissolving' | 'rearranging'
+export type DissolvePhase = 'idle' | 'queued' | 'dissolving' | 'rearranging'
+
+/** 松手后等待多久再开始首张隐藏（毫秒） */
+export const DISSOLVE_START_DELAY_MS = 500
 
 const STATUS_ORDER = ['open', 'closing', 'upcoming', 'closed'] as const
 
@@ -21,12 +24,14 @@ type DissolveRun = {
 type Params = {
   opportunities: Opportunity[]
   committedAge: number
+  previewAge: number
   rangeMode: boolean
   rangeStart: number
   rangeEnd: number
   category: Opportunity['category'] | 'all'
   hideClosed: boolean
   dissolveClosed: boolean
+  isAgeDragging: boolean
 }
 
 function computeItems(
@@ -73,18 +78,21 @@ export function useDissolveSequence(params: Params) {
   const {
     opportunities,
     committedAge,
+    previewAge,
     rangeMode,
     rangeStart,
     rangeEnd,
     category,
     hideClosed,
     dissolveClosed,
+    isAgeDragging,
   } = params
 
   const [phase, setPhase] = useState<DissolvePhase>('idle')
   const [dissolveRun, setDissolveRun] = useState<DissolveRun | null>(null)
   const [frozenItems, setFrozenItems] = useState<CardItem[]>([])
   const pendingAgeRef = useRef<number | null>(null)
+  const dissolveKickoffRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const onAgeAppliedRef = useRef<(age: number) => void>(() => {})
 
   const registerAgeApplied = useCallback((fn: (age: number) => void) => {
@@ -107,10 +115,13 @@ export function useDissolveSequence(params: Params) {
   const dissolveQueue = dissolveRun?.queue ?? []
   const dissolveDoneCount = dissolveRun?.doneCount ?? 0
 
-  const activeDissolveId =
+  const upcomingDissolveId =
     dissolveRun && dissolveDoneCount < dissolveQueue.length
       ? dissolveQueue[dissolveDoneCount]
       : null
+
+  /** 仅 dissolving 阶段赋值；queued 阶段为 null，避免提前播放动画 */
+  const activeDissolveId = phase === 'dissolving' ? upcomingDissolveId : null
 
   const vanishedIds = useMemo(
     () => new Set(dissolveQueue.slice(0, dissolveDoneCount)),
@@ -122,15 +133,57 @@ export function useDissolveSequence(params: Params) {
     [dissolveQueue],
   )
 
+  /** 拖动预览：将关闭但尚未隐藏的窗口（仅 idle + 隐藏已关模式） */
+  const previewClosingIds = useMemo(() => {
+    if (rangeMode || !dissolveClosed || phase !== 'idle' || previewAge === committedAge) {
+      return new Set<string>()
+    }
+    const prevItems = computeItems(
+      committedAge,
+      rangeMode,
+      rangeStart,
+      rangeEnd,
+      category,
+      opportunities,
+    )
+    const nextItems = computeItems(
+      previewAge,
+      rangeMode,
+      rangeStart,
+      rangeEnd,
+      category,
+      opportunities,
+    )
+    const prevStatus = new Map(prevItems.map((o) => [o.id, o.status]))
+    const ids = nextItems
+      .filter((o) => {
+        const was = prevStatus.get(o.id)
+        return o.status === 'closed' && was !== undefined && was !== 'closed'
+      })
+      .map((o) => o.id)
+    return new Set(ids)
+  }, [
+    committedAge,
+    previewAge,
+    rangeMode,
+    rangeStart,
+    rangeEnd,
+    category,
+    opportunities,
+    dissolveClosed,
+    phase,
+  ])
+
   const canvasItems = useMemo(() => {
-    if (phase === 'dissolving') {
+    if (phase === 'dissolving' || phase === 'queued') {
       return frozenItems
     }
-    const visible = filterVisible(committedItems, hideClosed, dissolveClosed)
+    const effectiveDissolveClosed = dissolveClosed && !isAgeDragging
+    const visible = filterVisible(committedItems, hideClosed, effectiveDissolveClosed)
     return [...visible].sort(
       (a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status),
     )
-  }, [phase, frozenItems, committedItems, hideClosed, dissolveClosed])
+  }, [phase, frozenItems, committedItems, hideClosed, dissolveClosed, isAgeDragging])
 
   const finishSequence = useCallback(() => {
     const age = pendingAgeRef.current
@@ -143,7 +196,11 @@ export function useDissolveSequence(params: Params) {
       onAgeAppliedRef.current(age)
     }
 
-    window.setTimeout(() => setPhase('idle'), 520)
+    window.setTimeout(() => setPhase('idle'), 420)
+  }, [])
+
+  const startDissolving = useCallback(() => {
+    setPhase('dissolving')
   }, [])
 
   const tryCommitAge = useCallback(
@@ -194,7 +251,15 @@ export function useDissolveSequence(params: Params) {
       pendingAgeRef.current = newAge
       setFrozenItems(snapshotWithClosed)
       setDissolveRun({ queue, doneCount: 0, fromAge: committedAge, toAge: newAge })
-      setPhase('dissolving')
+      setPhase('queued')
+
+      if (dissolveKickoffRef.current) {
+        window.clearTimeout(dissolveKickoffRef.current)
+      }
+      dissolveKickoffRef.current = window.setTimeout(() => {
+        dissolveKickoffRef.current = null
+        startDissolving()
+      }, DISSOLVE_START_DELAY_MS)
 
       return false
     },
@@ -207,6 +272,7 @@ export function useDissolveSequence(params: Params) {
       opportunities,
       hideClosed,
       dissolveClosed,
+      startDissolving,
     ],
   )
 
@@ -220,7 +286,7 @@ export function useDissolveSequence(params: Params) {
 
         const nextDone = prev.doneCount + 1
         if (nextDone >= prev.queue.length) {
-          setTimeout(() => finishSequence(), 80)
+          setTimeout(() => finishSequence(), 48)
           return { ...prev, doneCount: nextDone }
         }
 
@@ -231,6 +297,10 @@ export function useDissolveSequence(params: Params) {
   )
 
   const cancelSequence = useCallback(() => {
+    if (dissolveKickoffRef.current) {
+      window.clearTimeout(dissolveKickoffRef.current)
+      dissolveKickoffRef.current = null
+    }
     pendingAgeRef.current = null
     setDissolveRun(null)
     setFrozenItems([])
@@ -242,11 +312,19 @@ export function useDissolveSequence(params: Params) {
     canvasItems,
     dissolveRun,
     activeDissolveId,
+    upcomingDissolveId,
     vanishedIds,
     pendingDissolveIds,
+    previewClosingIds,
     dissolveProgress: dissolveRun
       ? {
-          current: dissolveDoneCount,
+          /** 已完成飘散数量（0-based 内部计数） */
+          done: dissolveDoneCount,
+          /** 当前正在飘散第几个（1-based，展示用） */
+          step:
+            phase === 'dissolving' && dissolveQueue.length > 0
+              ? Math.min(dissolveDoneCount + 1, dissolveQueue.length)
+              : 0,
           total: dissolveQueue.length,
           fromAge: dissolveRun.fromAge,
           toAge: dissolveRun.toAge,
@@ -256,7 +334,7 @@ export function useDissolveSequence(params: Params) {
     completeDissolve,
     cancelSequence,
     registerAgeApplied,
-    layoutFrozen: phase === 'dissolving',
+    layoutFrozen: phase === 'queued' || phase === 'dissolving',
     layoutAnimating: phase === 'rearranging',
     isBusy: phase !== 'idle',
   }

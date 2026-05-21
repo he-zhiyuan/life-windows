@@ -200,7 +200,7 @@ const {
   activeDissolveId,
   vanishedIds,
   pendingDissolveIds,    // = queue 全集，用于 waiting 样式
-  dissolveProgress,      // { current, total, fromAge, toAge }
+  dissolveProgress,      // { done, step (1-based), total, fromAge, toAge }
   tryCommitAge,
   completeDissolve,
   layoutFrozen,          // dissolving 时为 true
