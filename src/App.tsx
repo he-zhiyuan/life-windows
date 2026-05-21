@@ -57,8 +57,7 @@ export default function App() {
   const [rangeStart, setRangeStart] = useState(18)
   const [rangeEnd, setRangeEnd] = useState(22)
   const [category, setCategory] = useState<Category | 'all'>('all')
-  const [hideClosed, setHideClosed] = useState(false)
-  const [dissolveClosed, setDissolveClosed] = useState(false)
+  const [onlyActionable, setOnlyActionable] = useState(false)
   const [isAgeDragging, setIsAgeDragging] = useState(false)
   const isAgeDraggingRef = useRef(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -87,8 +86,7 @@ export default function App() {
     rangeStart,
     rangeEnd,
     category,
-    hideClosed,
-    dissolveClosed,
+    onlyActionable,
     isAgeDragging,
   })
 
@@ -201,10 +199,8 @@ export default function App() {
     onRangeCommit: handleRangeCommit,
     category,
     onCategoryChange: setCategory,
-    hideClosed,
-    onHideClosedChange: setHideClosed,
-    dissolveClosed,
-    onDissolveClosedChange: setDissolveClosed,
+    onlyActionable,
+    onOnlyActionableChange: setOnlyActionable,
     disabled: isBusy,
   }
 
@@ -234,7 +230,7 @@ export default function App() {
               rangeStart={rangeStart}
               rangeEnd={rangeEnd}
             />
-            <SummaryStrip items={navItems} summary="开启后松手将隐藏新关闭的窗口 · 点击查看详情" />
+            <SummaryStrip items={navItems} summary="开启「仅可做」后松手将隐藏新关闭的窗口 · 点击查看详情" />
           </aside>
 
           <main className="min-h-0 min-w-0 flex-1">
@@ -312,7 +308,7 @@ export default function App() {
               <Section
                 id={SECTION_IDS.closed}
                 title="已基本关闭"
-                hint={dissolveClosed ? '松手后隐藏新关闭的窗口' : '可展开查看补救'}
+                hint={onlyActionable ? '松手后隐藏新关闭的窗口' : '可展开查看补救'}
                 items={mobileClosedItems}
                 tone="closed"
                 activeDissolveId={activeDissolveId}

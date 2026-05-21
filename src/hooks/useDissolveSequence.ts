@@ -29,8 +29,8 @@ type Params = {
   rangeStart: number
   rangeEnd: number
   category: Opportunity['category'] | 'all'
-  hideClosed: boolean
-  dissolveClosed: boolean
+  /** 仅可做：隐藏已关窗口，新关闭时播放碎裂动画 */
+  onlyActionable: boolean
   isAgeDragging: boolean
 }
 
@@ -62,16 +62,8 @@ function computeItems(
   return list.map((o) => withStatus(o, age))
 }
 
-function filterVisible(
-  items: CardItem[],
-  hideClosed: boolean,
-  dissolveClosed: boolean,
-): CardItem[] {
-  return items.filter((o) => {
-    if (hideClosed && o.status === 'closed') return false
-    if (dissolveClosed && o.status === 'closed') return false
-    return true
-  })
+function filterVisible(items: CardItem[], onlyActionable: boolean): CardItem[] {
+  return items.filter((o) => !(onlyActionable && o.status === 'closed'))
 }
 
 export function useDissolveSequence(params: Params) {
@@ -83,8 +75,7 @@ export function useDissolveSequence(params: Params) {
     rangeStart,
     rangeEnd,
     category,
-    hideClosed,
-    dissolveClosed,
+    onlyActionable,
     isAgeDragging,
   } = params
 
@@ -135,7 +126,7 @@ export function useDissolveSequence(params: Params) {
 
   /** 拖动预览：将关闭但尚未隐藏的窗口（仅 idle + 隐藏已关模式） */
   const previewClosingIds = useMemo(() => {
-    if (rangeMode || !dissolveClosed || phase !== 'idle' || previewAge === committedAge) {
+    if (rangeMode || !onlyActionable || phase !== 'idle' || previewAge === committedAge) {
       return new Set<string>()
     }
     const prevItems = computeItems(
@@ -170,7 +161,7 @@ export function useDissolveSequence(params: Params) {
     rangeEnd,
     category,
     opportunities,
-    dissolveClosed,
+    onlyActionable,
     phase,
   ])
 
@@ -178,12 +169,12 @@ export function useDissolveSequence(params: Params) {
     if (phase === 'dissolving' || phase === 'queued') {
       return frozenItems
     }
-    const effectiveDissolveClosed = dissolveClosed && !isAgeDragging
-    const visible = filterVisible(committedItems, hideClosed, effectiveDissolveClosed)
+    const effectiveOnlyActionable = onlyActionable && !isAgeDragging
+    const visible = filterVisible(committedItems, effectiveOnlyActionable)
     return [...visible].sort(
       (a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status),
     )
-  }, [phase, frozenItems, committedItems, hideClosed, dissolveClosed, isAgeDragging])
+  }, [phase, frozenItems, committedItems, onlyActionable, isAgeDragging])
 
   const finishSequence = useCallback(() => {
     const age = pendingAgeRef.current
@@ -205,7 +196,7 @@ export function useDissolveSequence(params: Params) {
 
   const tryCommitAge = useCallback(
     (newAge: number): boolean => {
-      if (rangeMode || !dissolveClosed || newAge === committedAge) {
+      if (rangeMode || !onlyActionable || newAge === committedAge) {
         return true
       }
 
@@ -239,7 +230,7 @@ export function useDissolveSequence(params: Params) {
 
       const closedIdSet = new Set(newlyClosed.map((o) => o.id))
       // 快照 = 松手前用户实际看到的卡片（已关飘散模式下原本就隐藏的已关卡片不再出现）
-      const snapshot = filterVisible(prevItems, hideClosed, dissolveClosed)
+      const snapshot = filterVisible(prevItems, onlyActionable)
       const snapshotWithClosed = snapshot.map((item) =>
         closedIdSet.has(item.id) ? { ...item, status: 'closed' as const } : item,
       )
@@ -270,8 +261,7 @@ export function useDissolveSequence(params: Params) {
       rangeEnd,
       category,
       opportunities,
-      hideClosed,
-      dissolveClosed,
+      onlyActionable,
       startDissolving,
     ],
   )

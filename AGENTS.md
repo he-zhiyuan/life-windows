@@ -58,17 +58,14 @@ npm run build    # 产出 dist/
 **快照 `frozenItems` 必须用：**
 
 ```ts
-filterVisible(prevItems, hideClosed, dissolveClosed)
+filterVisible(prevItems, onlyActionable)
 ```
 
-**禁止** `dissolveClosed: false`，否则会把上次已隐藏的已关卡片重新显示到网格里（提示 8 个、页面却很多张）。
+**禁止** `filterVisible(prevItems, false)` 在已开「仅可做」时误用，否则会把历史已关卡片重新塞进网格。
 
-### 4. 两种隐藏已关
+### 4. 「仅可做」`onlyActionable`
 
-| 开关 | 行为 |
-|------|------|
-| `hideClosed`（仅看仍可做） | 立即从列表移除，无动画 |
-| `dissolveClosed`（已关飘散） | 仅新关闭条目飘散；与 `hideClosed` 互斥 |
+- 开启后：列表隐藏已关窗口；年龄变大松手后，**仅新关闭**条目逐个碎裂隐藏
 
 ## 目录与职责
 
@@ -113,7 +110,7 @@ age > still[1]    → closed
 ## 修改检查清单
 
 - [ ] 飘散是否仍对比 `committedAge → newAge`，且队列仅 `newlyClosed`
-- [ ] 飘散快照是否 `filterVisible(..., dissolveClosed)` 与松手前一致
+- [ ] 飘散快照是否 `filterVisible(..., onlyActionable)` 与松手前一致
 - [ ] 飘散完成前是否 `layoutFrozen`（`CardCanvas` 不 `popLayout` 重排）
 - [ ] `npm run build` 无 TS 错误
 - [ ] 桌面 + 移动各测一次

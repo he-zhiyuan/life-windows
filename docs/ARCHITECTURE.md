@@ -173,7 +173,7 @@ const newlyClosed = nextItems.filter((o) => {
 ### 4.3 冻结快照
 
 ```typescript
-const snapshot = filterVisible(prevItems, hideClosed, dissolveClosed)
+const snapshot = filterVisible(prevItems, onlyActionable)
 // 与松手前用户看到的卡片一致；已关飘散模式下旧已关本就不显示
 
 const snapshotWithClosed = snapshot.map((item) =>
@@ -182,7 +182,7 @@ const snapshotWithClosed = snapshot.map((item) =>
 setFrozenItems(snapshotWithClosed)
 ```
 
-**常见 Bug：** 使用 `filterVisible(prevItems, hideClosed, false)` 会把历史已关卡片重新塞进网格，导致「提示 N 个、页面很多张」。
+**常见 Bug：** 使用 `filterVisible(prevItems, false)`（在已开「仅可做」时）会把历史已关卡片重新塞进网格，导致「提示 N 个、页面很多张」。
 
 ### 4.4 逐个飘散
 
@@ -244,12 +244,7 @@ const {
 
 ## 6. 筛选与可见性
 
-`filterVisible(items, hideClosed, dissolveClosed)`：
-
-```typescript
-if (hideClosed && status === 'closed') return false
-if (dissolveClosed && status === 'closed') return false
-```
+`filterVisible(items, onlyActionable)`：`onlyActionable && status === 'closed'` 时过滤掉。
 
 `canvasItems` 在 `idle` 时：先 `filterVisible(committedItems, ...)` 再按状态排序。
 

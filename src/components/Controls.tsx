@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import type { PointerEvent as ReactPointerEvent, ReactNode } from 'react'
-import { EyeOff, Filter, Layers, Sparkles } from 'lucide-react'
+import { Filter, Layers, Sparkles } from 'lucide-react'
 import type { Category } from '../types'
 import { CATEGORY_LABELS } from '../types'
 import { cn } from '../lib/cn'
@@ -21,10 +21,8 @@ type Props = {
   onRangeCommit?: () => void
   category: Category | 'all'
   onCategoryChange: (c: Category | 'all') => void
-  hideClosed: boolean
-  onHideClosedChange: (v: boolean) => void
-  dissolveClosed: boolean
-  onDissolveClosedChange: (v: boolean) => void
+  onlyActionable: boolean
+  onOnlyActionableChange: (v: boolean) => void
   disabled?: boolean
   compact?: boolean
 }
@@ -98,10 +96,8 @@ export function Controls({
   onRangeCommit,
   category,
   onCategoryChange,
-  hideClosed,
-  onHideClosedChange,
-  dissolveClosed,
-  onDissolveClosedChange,
+  onlyActionable,
+  onOnlyActionableChange,
   disabled,
   compact,
 }: Props) {
@@ -205,24 +201,10 @@ export function Controls({
             disabled={disabled}
           />
           <Toggle
-            checked={hideClosed}
-            onChange={(v) => {
-              onHideClosedChange(v)
-              if (v) onDissolveClosedChange(false)
-            }}
+            checked={onlyActionable}
+            onChange={onOnlyActionableChange}
             label="仅可做"
             icon={Sparkles}
-            small={compact}
-            disabled={disabled}
-          />
-          <Toggle
-            checked={dissolveClosed}
-            onChange={(v) => {
-              onDissolveClosedChange(v)
-              if (v) onHideClosedChange(false)
-            }}
-            label="隐藏已关机会窗口"
-            icon={EyeOff}
             small={compact}
             disabled={disabled}
           />
