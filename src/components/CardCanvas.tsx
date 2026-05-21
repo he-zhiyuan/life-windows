@@ -30,7 +30,7 @@ type Props = {
 }
 
 export function CardCanvas({
-  items,
+  items = [],
   selectedId,
   activeDissolveId,
   vanishedIds,

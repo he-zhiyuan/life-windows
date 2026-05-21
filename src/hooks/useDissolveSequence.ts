@@ -39,9 +39,9 @@ function computeItems(
   rangeStart: number,
   rangeEnd: number,
   category: Params['category'],
-  opportunities: Opportunity[],
+  opportunities: Opportunity[] | undefined,
 ): CardItem[] {
-  let list = opportunities
+  let list = opportunities ?? []
   if (category !== 'all') {
     list = list.filter((o) => o.category === category)
   }
@@ -61,8 +61,8 @@ function computeItems(
   return list.map((o) => withStatus(o, age))
 }
 
-function filterVisible(items: CardItem[], onlyActionable: boolean): CardItem[] {
-  return items.filter((o) => !(onlyActionable && o.status === 'closed'))
+function filterVisible(items: CardItem[] | undefined, onlyActionable: boolean): CardItem[] {
+  return (items ?? []).filter((o) => !(onlyActionable && o.status === 'closed'))
 }
 
 export function useDissolveSequence(params: Params) {
@@ -165,7 +165,7 @@ export function useDissolveSequence(params: Params) {
 
   const canvasItems = useMemo(() => {
     if (phase === 'dissolving' || phase === 'queued') {
-      return frozenItems
+      return frozenItems ?? []
     }
     const visible = filterVisible(committedItems, onlyActionable)
     return [...visible].sort(

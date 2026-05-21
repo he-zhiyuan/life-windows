@@ -90,6 +90,8 @@ export default function App() {
     onlyActionable,
   })
 
+  const safeItems = canvasItems ?? []
+
   const applyCommittedAge = useCallback((age: number) => {
     setCommittedAge(age)
     setPreviewAge(age)
@@ -135,19 +137,19 @@ export default function App() {
   }
 
   const groups = useMemo(() => {
-    const open = canvasItems.filter((o) => o.status === 'open')
-    const closing = canvasItems.filter((o) => o.status === 'closing')
-    const closed = canvasItems.filter((o) => o.status === 'closed')
-    const upcoming = canvasItems.filter((o) => o.status === 'upcoming')
+    const open = safeItems.filter((o) => o.status === 'open')
+    const closing = safeItems.filter((o) => o.status === 'closing')
+    const closed = safeItems.filter((o) => o.status === 'closed')
+    const upcoming = safeItems.filter((o) => o.status === 'upcoming')
     return { open, closing, closed, upcoming }
-  }, [canvasItems])
+  }, [safeItems])
 
   const mobileClosedItems = useMemo(() => {
     if (phase === 'queued' || phase === 'dissolving') {
-      return canvasItems.filter((o) => pendingDissolveIds.has(o.id))
+      return safeItems.filter((o) => pendingDissolveIds.has(o.id))
     }
     return groups.closed
-  }, [phase, canvasItems, pendingDissolveIds, groups.closed])
+  }, [phase, safeItems, pendingDissolveIds, groups.closed])
 
   const actionable = groups.open.length + groups.closing.length
 
@@ -157,8 +159,8 @@ export default function App() {
       : phase === 'dissolving' && dissolveProgress && dissolveProgress.step > 0
       ? `相较 ${dissolveProgress.fromAge}→${dissolveProgress.toAge} 岁，${dissolveProgress.total} 个机会窗口关闭（${dissolveProgress.step}/${dissolveProgress.total}）`
       : rangeMode
-          ? `${rangeStart}–${rangeEnd} 岁 · ${canvasItems.length} 个窗口`
-          : `${committedAge} 岁 · ${actionable} 个可把握 · 共 ${canvasItems.length} 张卡片`
+          ? `${rangeStart}–${rangeEnd} 岁 · ${safeItems.length} 个窗口`
+          : `${committedAge} 岁 · ${actionable} 个可把握 · 共 ${safeItems.length} 张卡片`
 
   const navItems: SummaryItem[] = [
     { id: SECTION_IDS.open, label: '开放', value: groups.open.length, tone: 'open' },
@@ -176,13 +178,13 @@ export default function App() {
       : []),
   ]
 
-  const selectedItem = canvasItems.find((o) => o.id === selectedId) ?? null
+  const selectedItem = safeItems.find((o) => o.id === selectedId) ?? null
 
   useEffect(() => {
-    if (selectedId && !canvasItems.some((o) => o.id === selectedId)) {
+    if (selectedId && !safeItems.some((o) => o.id === selectedId)) {
       setSelectedId(null)
     }
-  }, [selectedId, canvasItems])
+  }, [selectedId, safeItems])
 
   const controlProps = {
     age: previewAge,
@@ -241,7 +243,7 @@ export default function App() {
 
           <main className="min-h-0 min-w-0 flex-1">
             <CardCanvas
-              items={canvasItems}
+              items={safeItems}
               selectedId={selectedId}
               activeDissolveId={activeDissolveId}
               vanishedIds={vanishedIds}
