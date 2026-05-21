@@ -1,15 +1,23 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { opportunities } from './data/opportunities'
 import type { Category } from './types'
-import { getWindowStatus, overlapsRange, withStatus } from './utils/status'
 import { AgeHero } from './components/AgeHero'
+import { CardCanvas } from './components/CardCanvas'
 import { Controls } from './components/Controls'
+import { DetailOverlay } from './components/DetailOverlay'
 import { Footer } from './components/Footer'
 import { Header } from './components/Header'
 import { Section } from './components/Section'
-import { StatsBar } from './components/StatsBar'
+import { SummaryStrip, type SummaryItem } from './components/SummaryStrip'
+import { useDissolveSequence } from './hooks/useDissolveSequence'
 
 const STORAGE_KEY = 'life-windows-age'
+const SECTION_IDS = {
+  open: 'section-open',
+  closing: 'section-closing',
+  upcoming: 'section-upcoming',
+  closed: 'section-closed',
+} as const
 
 function loadAge(): number {
   try {
@@ -24,143 +32,265 @@ function loadAge(): number {
   return 25
 }
 
+function phaseLabel(
+  phase: string,
+  progress: { current: number; total: number; fromAge: number; toAge: number } | null,
+): string | null {
+  if (phase === 'dissolving' && progress) {
+    return `相较 ${progress.fromAge}→${progress.toAge} 岁，${progress.total} 个新关闭窗口逐个飘散 (${progress.current}/${progress.total})`
+  }
+  if (phase === 'dissolving') return '错过了的人生窗口，魂飞魄散…'
+  if (phase === 'rearranging') return '全部飘散完成，正在重新排列…'
+  return null
+}
+
 export default function App() {
-  const [age, setAge] = useState(loadAge)
+  const [committedAge, setCommittedAge] = useState(loadAge)
+  const [previewAge, setPreviewAge] = useState(loadAge)
   const [rangeMode, setRangeMode] = useState(false)
   const [rangeStart, setRangeStart] = useState(18)
   const [rangeEnd, setRangeEnd] = useState(22)
   const [category, setCategory] = useState<Category | 'all'>('all')
   const [hideClosed, setHideClosed] = useState(false)
+  const [dissolveClosed, setDissolveClosed] = useState(false)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
-  useEffect(() => {
+  const {
+    phase,
+    canvasItems,
+    activeDissolveId,
+    vanishedIds,
+    pendingDissolveIds,
+    dissolveProgress,
+    tryCommitAge,
+    completeDissolve,
+    registerAgeApplied,
+    layoutFrozen,
+    layoutAnimating,
+    isBusy,
+  } = useDissolveSequence({
+    opportunities,
+    committedAge,
+    rangeMode,
+    rangeStart,
+    rangeEnd,
+    category,
+    hideClosed,
+    dissolveClosed,
+  })
+
+  const applyCommittedAge = useCallback((age: number) => {
+    setCommittedAge(age)
+    setPreviewAge(age)
     try {
       localStorage.setItem(STORAGE_KEY, String(age))
     } catch {
       /* ignore */
     }
-  }, [age])
+  }, [])
 
-  const filtered = useMemo(() => {
-    let list = opportunities
+  useEffect(() => {
+    registerAgeApplied(applyCommittedAge)
+  }, [registerAgeApplied, applyCommittedAge])
 
-    if (category !== 'all') {
-      list = list.filter((o) => o.category === category)
+  const handleAgePreview = (age: number) => {
+    setPreviewAge(age)
+  }
+
+  const handleAgeCommit = (age: number) => {
+    setPreviewAge(age)
+    if (tryCommitAge(age)) {
+      applyCommittedAge(age)
     }
+  }
 
-    if (rangeMode) {
-      list = list.filter((o) => overlapsRange(o.window, rangeStart, rangeEnd))
-      return list.map((o) => {
-        const statuses = Array.from(
-          { length: rangeEnd - rangeStart + 1 },
-          (_, i) => getWindowStatus(rangeStart + i, o.window),
-        )
-        const priority = ['open', 'closing', 'upcoming', 'closed'] as const
-        const status = priority.find((s) => statuses.includes(s)) ?? 'closed'
-        return { ...o, status }
-      })
-    }
-
-    return list.map((o) => withStatus(o, age))
-  }, [age, category, rangeMode, rangeStart, rangeEnd])
+  const handleRangeCommit = () => {
+    applyCommittedAge(previewAge)
+  }
 
   const groups = useMemo(() => {
-    const open = filtered.filter((o) => o.status === 'open')
-    const closing = filtered.filter((o) => o.status === 'closing')
-    const closed = hideClosed ? [] : filtered.filter((o) => o.status === 'closed')
-    const upcoming = filtered.filter((o) => o.status === 'upcoming')
+    const open = canvasItems.filter((o) => o.status === 'open')
+    const closing = canvasItems.filter((o) => o.status === 'closing')
+    const closed = canvasItems.filter((o) => o.status === 'closed')
+    const upcoming = canvasItems.filter((o) => o.status === 'upcoming')
     return { open, closing, closed, upcoming }
-  }, [filtered, hideClosed])
+  }, [canvasItems])
+
+  const mobileClosedItems = useMemo(() => {
+    if (phase === 'dissolving') {
+      return canvasItems.filter((o) => pendingDissolveIds.has(o.id))
+    }
+    return groups.closed
+  }, [phase, canvasItems, pendingDissolveIds, groups.closed])
 
   const actionable = groups.open.length + groups.closing.length
 
-  const summary = rangeMode
-    ? `${rangeStart}–${rangeEnd} 岁区间内，共 ${filtered.length} 个相关窗口`
-    : `${age} 岁时，${actionable} 个窗口仍可把握${!hideClosed && groups.closed.length > 0 ? `，${groups.closed.length} 个已基本关闭` : ''}`
+  const summary =
+    phase === 'dissolving' && dissolveProgress
+      ? `相较 ${dissolveProgress.fromAge} 岁新增 ${dissolveProgress.total} 个已关 · 飘散 ${dissolveProgress.current}/${dissolveProgress.total}`
+      : phase === 'rearranging'
+        ? '重新排列剩余窗口…'
+        : rangeMode
+          ? `${rangeStart}–${rangeEnd} 岁 · ${canvasItems.length} 个窗口`
+          : `${committedAge} 岁 · ${actionable} 个可把握 · 共 ${canvasItems.length} 张卡片`
 
-  const stats = rangeMode
-    ? [
-        { label: '相关窗口', value: filtered.length, tone: 'neutral' as const },
-        { label: '最佳期', value: groups.open.length, tone: 'open' as const },
-        { label: '仍可期', value: groups.closing.length, tone: 'closing' as const },
-        { label: '将到来', value: groups.upcoming.length, tone: 'upcoming' as const },
-      ]
-    : [
-        { label: '窗口开放', value: groups.open.length, tone: 'open' as const },
-        { label: '即将关闭', value: groups.closing.length, tone: 'closing' as const },
-        { label: '已基本关闭', value: groups.closed.length, tone: 'closed' as const },
-        { label: '即将到来', value: groups.upcoming.length, tone: 'upcoming' as const },
-      ]
+  const navItems: SummaryItem[] = [
+    { id: SECTION_IDS.open, label: '开放', value: groups.open.length, tone: 'open' },
+    { id: SECTION_IDS.closing, label: '将关', value: groups.closing.length, tone: 'closing' },
+    { id: SECTION_IDS.upcoming, label: '未来', value: groups.upcoming.length, tone: 'upcoming' },
+    ...(mobileClosedItems.length > 0
+      ? [
+          {
+            id: SECTION_IDS.closed,
+            label: '已关',
+            value: mobileClosedItems.length,
+            tone: 'closed' as const,
+          },
+        ]
+      : []),
+  ]
+
+  const selectedItem = canvasItems.find((o) => o.id === selectedId) ?? null
+
+  useEffect(() => {
+    if (selectedId && !canvasItems.some((o) => o.id === selectedId)) {
+      setSelectedId(null)
+    }
+  }, [selectedId, canvasItems])
+
+  const controlProps = {
+    age: previewAge,
+    onAgePreview: handleAgePreview,
+    onAgeCommit: handleAgeCommit,
+    rangeMode,
+    onRangeModeChange: setRangeMode,
+    rangeStart,
+    rangeEnd,
+    onRangeStartChange: setRangeStart,
+    onRangeEndChange: setRangeEnd,
+    onRangeCommit: handleRangeCommit,
+    category,
+    onCategoryChange: setCategory,
+    hideClosed,
+    onHideClosedChange: setHideClosed,
+    dissolveClosed,
+    onDissolveClosedChange: setDissolveClosed,
+    disabled: isBusy,
+  }
 
   return (
-    <div className="mx-auto min-h-screen max-w-2xl px-4 pb-16 pt-10 sm:px-6 sm:pt-14">
-      <Header />
+    <div className="min-h-screen lg:flex lg:h-screen lg:flex-col lg:overflow-hidden">
+      <div className="hidden lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
+        <header className="shrink-0 border-b border-stone-200/60 bg-white/50 px-6 py-4 backdrop-blur-md">
+          <div className="flex items-center justify-between gap-6">
+            <div className="min-w-0">
+              <h1 className="font-serif text-2xl font-semibold tracking-tight text-stone-900">
+                时光窗口
+              </h1>
+              <p className="mt-0.5 text-xs text-stone-500">{summary}</p>
+            </div>
+            <div className="w-full max-w-md">
+              <Controls compact {...controlProps} />
+            </div>
+          </div>
+        </header>
 
-      <div className="mt-10 space-y-5">
-        <AgeHero
-          age={age}
-          rangeMode={rangeMode}
-          rangeStart={rangeStart}
-          rangeEnd={rangeEnd}
-        />
+        <div className="flex min-h-0 flex-1 gap-4 px-6 py-4">
+          <aside className="flex w-52 shrink-0 flex-col gap-3 xl:w-56">
+            <AgeHero
+              compact
+              age={previewAge}
+              rangeMode={rangeMode}
+              rangeStart={rangeStart}
+              rangeEnd={rangeEnd}
+            />
+            <SummaryStrip items={navItems} summary="松手后触发飘散 · 点击查看详情" />
+          </aside>
 
-        <Controls
-          age={age}
-          onAgeChange={setAge}
-          rangeMode={rangeMode}
-          onRangeModeChange={setRangeMode}
-          rangeStart={rangeStart}
-          rangeEnd={rangeEnd}
-          onRangeStartChange={setRangeStart}
-          onRangeEndChange={setRangeEnd}
-          category={category}
-          onCategoryChange={setCategory}
-          hideClosed={hideClosed}
-          onHideClosedChange={setHideClosed}
-        />
-
-        <StatsBar stats={stats} summary={summary} />
+          <main className="min-h-0 min-w-0 flex-1">
+            <CardCanvas
+              items={canvasItems}
+              selectedId={selectedId}
+              activeDissolveId={activeDissolveId}
+              vanishedIds={vanishedIds}
+              pendingDissolveIds={pendingDissolveIds}
+              layoutFrozen={layoutFrozen}
+              layoutAnimating={layoutAnimating}
+              phaseLabel={phaseLabel(phase, dissolveProgress)}
+              onSelect={setSelectedId}
+              onDissolveComplete={completeDissolve}
+            />
+          </main>
+        </div>
       </div>
 
-      <main className="mt-12 flex flex-col gap-14">
-        <Section
-          title="当前开放"
-          hint="处于最佳窗口，值得优先关注"
-          items={groups.open}
-          tone="open"
-          emptyText={
-            rangeMode
-              ? '该区间内没有处于最佳期的窗口'
-              : '当前年龄没有处于最佳期的窗口'
-          }
-        />
-        <Section
-          title="即将关闭"
-          hint="仍有机会，但成本与难度在上升"
-          items={groups.closing}
-          tone="closing"
-        />
-        {!rangeMode && (
-          <Section
-            title="已基本关闭"
-            hint="原路径窗口已过，可查看补救方式"
-            items={groups.closed}
-            tone="closed"
-            emptyText={
-              hideClosed
-                ? undefined
-                : '没有已完全错过的窗口，或已被筛选隐藏'
-            }
-          />
-        )}
-        <Section
-          title={rangeMode ? '区间内将到来' : '即将到来'}
-          hint="提前了解，为未来保留选项"
-          items={groups.upcoming}
-          tone="upcoming"
-        />
-      </main>
+      <DetailOverlay
+        opportunity={selectedItem}
+        status={selectedItem?.status ?? null}
+        onClose={() => setSelectedId(null)}
+      />
 
-      <Footer />
+      <div className="lg:hidden">
+        <div className="mx-auto max-w-2xl px-4 pb-16 pt-8 sm:px-6">
+          <Header />
+
+          <div className="mt-8 space-y-4">
+            <AgeHero
+              age={previewAge}
+              rangeMode={rangeMode}
+              rangeStart={rangeStart}
+              rangeEnd={rangeEnd}
+            />
+            <Controls {...controlProps} />
+            {phaseLabel(phase, dissolveProgress) && (
+              <p className="rounded-lg bg-stone-800 px-3 py-2 text-center text-sm text-amber-100">
+                {phaseLabel(phase, dissolveProgress)}
+              </p>
+            )}
+            <SummaryStrip items={navItems} summary={summary} />
+          </div>
+
+          <main className="mt-10 flex flex-col gap-10">
+            <Section
+              id={SECTION_IDS.open}
+              title="当前开放"
+              hint="处于最佳窗口"
+              items={groups.open}
+              tone="open"
+              emptyText="当前没有处于最佳期的窗口"
+            />
+            <Section
+              id={SECTION_IDS.closing}
+              title="即将关闭"
+              hint="仍有机会"
+              items={groups.closing}
+              tone="closing"
+            />
+            <Section
+              id={SECTION_IDS.upcoming}
+              title="即将到来"
+              hint="提前了解"
+              items={groups.upcoming}
+              tone="upcoming"
+            />
+            {!rangeMode && (mobileClosedItems.length > 0 || phase === 'dissolving') && (
+              <Section
+                id={SECTION_IDS.closed}
+                title="已基本关闭"
+                hint={dissolveClosed ? '松手后魂飞魄散' : '可展开查看补救'}
+                items={mobileClosedItems}
+                tone="closed"
+                activeDissolveId={activeDissolveId}
+                vanishedIds={vanishedIds}
+                pendingDissolveIds={pendingDissolveIds}
+                onDissolveComplete={completeDissolve}
+              />
+            )}
+          </main>
+
+          <Footer />
+        </div>
+      </div>
     </div>
   )
 }

@@ -47,6 +47,18 @@
   .slider-track::-moz-range-thumb {
     @apply h-5 w-5 cursor-grab rounded-full border-2 border-white bg-amber-600 shadow-md;
   }
+
+  .dual-thumb {
+    @apply pointer-events-none h-8 appearance-none bg-transparent;
+  }
+
+  .dual-thumb::-webkit-slider-thumb {
+    @apply pointer-events-auto h-5 w-5 cursor-grab appearance-none rounded-full border-2 border-white bg-amber-600 shadow-md;
+  }
+
+  .dual-thumb::-moz-range-thumb {
+    @apply pointer-events-auto h-5 w-5 cursor-grab rounded-full border-2 border-white bg-amber-600 shadow-md;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,6 +1,7 @@
 # 时光窗口 · MVP 产品文档
 
-> 版本：v0.1 | 更新：2026-05-21
+> 版本：v0.2 | 更新：2026-05-21  
+> 技术实现详见 [ARCHITECTURE.md](./ARCHITECTURE.md)，AI 协作见 [../AGENTS.md](../AGENTS.md)
 
 ## 1. 产品概述
 
@@ -39,21 +40,21 @@
 
 ### 3.1 必须有（P0）
 
-1. **年龄滑块**（0–80 岁）+ 数字输入
-2. **三区列表**（相对当前年龄）
-   - 已关闭：窗口基本结束
-   - 当前开放：最佳期或仍可期
-   - 即将到来：尚未到达窗口
+1. **年龄滑块**（0–80 岁）+ 数字输入（**松手后提交**，拖动时仅预览）
+2. **状态展示**（相对**已提交年龄** `committedAge`）
+   - 当前开放 / 即将关闭 / 即将到来 / 已基本关闭
 3. **类别筛选**（语言、教育、地域、健康、职业、关系、财务）
-4. **「仅看仍可做」** 开关：隐藏已关闭项
-5. **机会卡片**：标题、说明、年龄区间、重要性、补救路径
-6. **页脚免责声明**
+4. **「仅看仍可做」**：立即隐藏已关闭项（无动画）
+5. **「已关飘散」**：仅**相较上次年龄新关闭**的窗口，逐个魂飞魄散后重排
+6. **机会卡片**：标题、说明、补救路径；桌面为小卡片网格 + 详情抽屉
+7. **页脚免责声明**
 
-### 3.2 应该有（P1，MVP 已含）
+### 3.2 应该有（P1，已实现）
 
-- 年龄区间选择（如 18–22）用于探索某阶段所有窗口
-- 本地存储上次选择的年龄（localStorage）
-- 响应式布局（手机可用）
+- 年龄区间探索模式（双端滑块）
+- 本地存储上次年龄（`localStorage`：`life-windows-age`）
+- 响应式：桌面卡片墙 + 移动纵向分区
+- Tailwind + Framer Motion 动效
 
 ### 3.3 后续版本（P2+）
 
@@ -67,16 +68,30 @@
 
 ## 4. 核心交互
 
+### 4.0 年龄与飘散（实现要点）
+
 ```
-用户输入年龄 N
+拖动滑块 → 只更新 previewAge（Hero/数字）
+松手 pointerup → handleAgeCommit(newAge)
         ↓
-对每条机会计算状态：
-  - upcoming：N < 窗口.start
-  - open：N 在 best 区间内
-  - closing：N 在 still 区间内（仍可期）
-  - closed：N > still.end
+对比 committedAge（旧） vs newAge（新）
         ↓
-分三列展示 + 类别筛选 + 可选隐藏 closed
+新变为 closed 的条目 → 进入飘散队列（不是新年龄下全部已关）
+        ↓
+phase: dissolving → 逐个 SoulDissolve → rearranging → 更新 committedAge
+```
+
+详见 [ARCHITECTURE.md §3–§4](./ARCHITECTURE.md)。
+
+### 4.1 静态浏览
+
+```
+已提交年龄 N
+        ↓
+对每条机会计算状态（getWindowStatus）
+  - upcoming / open / closing / closed
+        ↓
+筛选 + 展示（桌面网格 / 移动分区）
 ```
 
 ### 4.1 窗口模型（数据契约）
@@ -138,20 +153,17 @@ MVP 内置 **40 条** 机会，覆盖人生阶段：
 
 ## 6. 信息架构
 
+### 桌面（lg+）
+
 ```
-/（单页应用）
-├── Header（产品名 + 简介）
-├── 控制区
-│   ├── 年龄滑块 + 输入
-│   ├── 区间模式开关 + 起止年龄
-│   ├── 类别筛选
-│   └── 「仅看仍可做」
-├── 三区结果
-│   ├── 当前开放（绿）
-│   ├── 即将关闭（琥珀）
-│   ├── 已关闭（灰）+ 补救
-│   └── 即将到来（蓝灰）
-└── Footer（免责 + 关于）
+顶栏：标题 + Controls（年龄提交、筛选、飘散开关）
+主体：AgeHero | CardCanvas（小卡片网格）→ DetailOverlay
+```
+
+### 移动（< lg）
+
+```
+Header → Controls → 按状态 Section 列表 → Footer
 ```
 
 ---
@@ -160,35 +172,14 @@ MVP 内置 **40 条** 机会，覆盖人生阶段：
 
 | 项 | 选型 |
 |----|------|
-| 框架 | React 18 + TypeScript |
+| 框架 | React 19 + TypeScript |
 | 构建 | Vite 6 |
-| 样式 | 原生 CSS（简洁、无 UI 库） |
-| 数据 | `src/data/opportunities.ts` 静态数组 |
-| 部署 | `npm run build` → Vercel / 静态服务器 |
+| 样式 | Tailwind CSS v4 |
+| 动画 | Framer Motion |
+| 数据 | `src/data/opportunities.ts` |
+| 核心 Hook | `src/hooks/useDissolveSequence.ts` |
 
-### 7.1 目录结构
-
-```
-life-windows/
-├── docs/MVP.md
-├── index.html
-├── package.json
-├── vite.config.ts
-├── src/
-│   ├── main.tsx
-│   ├── App.tsx
-│   ├── index.css
-│   ├── types.ts
-│   ├── data/opportunities.ts
-│   ├── utils/status.ts
-│   └── components/
-│       ├── Header.tsx
-│       ├── Controls.tsx
-│       ├── OpportunityCard.tsx
-│       ├── Section.tsx
-│       └── Footer.tsx
-└── README.md
-```
+完整目录与数据流见 [ARCHITECTURE.md](./ARCHITECTURE.md)。
 
 ---
 
@@ -205,13 +196,15 @@ life-windows/
 
 ## 9. 验收标准
 
-- [ ] `npm install && npm run dev` 可启动，无 TS 错误
-- [ ] 拖动滑块，三区列表实时更新
-- [ ] 切换类别筛选正确
-- [ ] 「仅看仍可做」隐藏 closed 项
-- [ ] 区间模式下展示与 `[start,end]` 相交的所有窗口
-- [ ] 移动端 375px 宽度布局正常
-- [ ] 刷新后记住上次年龄（localStorage）
+- [x] `npm install && npm run dev` 可启动，无 TS 错误
+- [x] 拖动仅预览，松手后卡片状态才提交
+- [x] 「已关飘散」仅新关闭条目，数量与提示一致
+- [x] 飘散：全部消失后才重排
+- [x] 切换类别筛选正确
+- [x] 「仅看仍可做」与「已关飘散」互斥
+- [x] 区间模式正常工作
+- [x] 桌面网格 + 移动列表
+- [x] localStorage 记住年龄
 
 ---
 
@@ -219,7 +212,8 @@ life-windows/
 
 | 阶段 | 内容 | 时间 |
 |------|------|------|
-| **MVP v0.1**（当前） | 40 条数据 + 单页交互 | 1–2 天 |
+| **MVP v0.1** | 40 条数据 + 基础交互 | 已完成 |
+| **v0.2**（当前） | 桌面卡片墙 + 飘散三阶段 + 双年龄提交 | 已完成 |
 | v0.2 | 详情页、分享卡片 | +3 天 |
 | v0.3 | CMS + 专家审阅流程 | +2 周 |
 | v1.0 | 地域路径、用户故事 | +1 月 |

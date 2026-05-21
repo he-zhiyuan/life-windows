@@ -1,23 +1,30 @@
 import { motion } from 'framer-motion'
-import type { ReactNode } from 'react'
-import { Filter, Layers, Sparkles } from 'lucide-react'
+import type { PointerEvent as ReactPointerEvent, ReactNode } from 'react'
+import { Filter, Ghost, Layers, Sparkles } from 'lucide-react'
 import type { Category } from '../types'
 import { CATEGORY_LABELS } from '../types'
 import { cn } from '../lib/cn'
+import { DualRangeSlider } from './DualRangeSlider'
 
 type Props = {
   age: number
-  onAgeChange: (age: number) => void
+  onAgePreview: (age: number) => void
+  onAgeCommit: (age: number) => void
   rangeMode: boolean
   onRangeModeChange: (v: boolean) => void
   rangeStart: number
   rangeEnd: number
   onRangeStartChange: (v: number) => void
   onRangeEndChange: (v: number) => void
+  onRangeCommit?: () => void
   category: Category | 'all'
   onCategoryChange: (c: Category | 'all') => void
   hideClosed: boolean
   onHideClosedChange: (v: boolean) => void
+  dissolveClosed: boolean
+  onDissolveClosedChange: (v: boolean) => void
+  disabled?: boolean
+  compact?: boolean
 }
 
 const categories = Object.entries(CATEGORY_LABELS) as [Category, string][]
@@ -27,146 +34,213 @@ function Toggle({
   onChange,
   label,
   icon: Icon,
+  small,
+  disabled,
 }: {
   checked: boolean
   onChange: (v: boolean) => void
   label: string
   icon: typeof Layers
+  small?: boolean
+  disabled?: boolean
 }) {
   return (
     <button
       type="button"
       role="switch"
       aria-checked={checked}
+      disabled={disabled}
       onClick={() => onChange(!checked)}
       className={cn(
-        'flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-medium transition-all',
+        'flex items-center gap-1.5 rounded-lg font-medium transition-all',
+        small ? 'px-2.5 py-1.5 text-xs' : 'gap-2 rounded-xl px-3 py-2 text-sm',
         checked
           ? 'bg-stone-900 text-white shadow-md'
           : 'bg-stone-100/80 text-stone-600 hover:bg-stone-200/80',
+        disabled && 'cursor-not-allowed opacity-50',
       )}
     >
-      <Icon className="h-4 w-4 shrink-0 opacity-80" strokeWidth={2} />
+      <Icon className={cn('shrink-0 opacity-80', small ? 'h-3.5 w-3.5' : 'h-4 w-4')} strokeWidth={2} />
       {label}
     </button>
   )
 }
 
+function commitSlider(
+  e: ReactPointerEvent<HTMLInputElement>,
+  value: number,
+  onCommit: (age: number) => void,
+) {
+  if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+    e.currentTarget.releasePointerCapture(e.pointerId)
+  }
+  onCommit(value)
+}
+
 export function Controls({
   age,
-  onAgeChange,
+  onAgePreview,
+  onAgeCommit,
   rangeMode,
   onRangeModeChange,
   rangeStart,
   rangeEnd,
   onRangeStartChange,
   onRangeEndChange,
+  onRangeCommit,
   category,
   onCategoryChange,
   hideClosed,
   onHideClosedChange,
+  dissolveClosed,
+  onDissolveClosedChange,
+  disabled,
+  compact,
 }: Props) {
-  return (
-    <motion.section
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.15, duration: 0.45 }}
-      className="glass-panel space-y-5 p-5 sm:p-6"
-      aria-label="筛选与控制"
-    >
-      <div>
-        <label
-          htmlFor="age-slider"
-          className="mb-3 block text-xs font-semibold uppercase tracking-wider text-stone-400"
-        >
-          {rangeMode ? '探索年龄区间' : '拖动调整年龄'}
-        </label>
+  const inner = (
+    <>
+      <div className={cn(compact && 'flex flex-wrap items-center gap-3')}>
+        <div className={cn(compact ? 'min-w-[12rem] flex-1' : 'w-full')}>
+          {!compact && (
+            <label
+              htmlFor={rangeMode ? undefined : 'age-slider'}
+              className="mb-2.5 block text-xs font-semibold uppercase tracking-wider text-stone-400"
+            >
+              {rangeMode ? '拖动选择区间' : '拖动调整年龄（松手后生效）'}
+            </label>
+          )}
 
-        {!rangeMode ? (
-          <div className="flex items-center gap-4">
-            <input
-              id="age-slider"
-              type="range"
+          {rangeMode ? (
+            <DualRangeSlider
               min={0}
               max={80}
-              value={age}
-              onChange={(e) => onAgeChange(Number(e.target.value))}
-              className="slider-track flex-1"
+              start={rangeStart}
+              end={rangeEnd}
+              onStartChange={onRangeStartChange}
+              onEndChange={onRangeEndChange}
+              onCommit={onRangeCommit}
             />
-            <div className="flex items-baseline gap-1 rounded-xl bg-stone-100/90 px-3 py-2 ring-1 ring-stone-200/60">
+          ) : (
+            <div className="flex items-center gap-2">
               <input
-                type="number"
+                id={compact ? 'age-slider-desktop' : 'age-slider'}
+                type="range"
                 min={0}
                 max={80}
                 value={age}
-                onChange={(e) => {
-                  const v = Math.min(80, Math.max(0, Number(e.target.value) || 0))
-                  onAgeChange(v)
+                disabled={disabled}
+                onChange={(e) => onAgePreview(Number(e.target.value))}
+                onPointerUp={(e) => commitSlider(e, Number(e.currentTarget.value), onAgeCommit)}
+                onKeyUp={(e) => {
+                  if (e.key === 'Enter') onAgeCommit(Number(e.currentTarget.value))
                 }}
-                className="w-10 bg-transparent text-center font-serif text-xl font-semibold text-stone-900 outline-none"
-                aria-label="年龄数字输入"
+                className="slider-track flex-1"
               />
-              <span className="text-sm text-stone-400">岁</span>
+              {!compact && (
+                <div className="flex items-baseline gap-1 rounded-xl bg-stone-100/90 px-2.5 py-1.5 ring-1 ring-stone-200/60">
+                  <input
+                    type="number"
+                    min={0}
+                    max={80}
+                    value={age}
+                    disabled={disabled}
+                    onChange={(e) => {
+                      const v = Math.min(80, Math.max(0, Number(e.target.value) || 0))
+                      onAgePreview(v)
+                    }}
+                    onBlur={(e) => onAgeCommit(Number(e.target.value) || 0)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        onAgeCommit(Number(e.currentTarget.value) || 0)
+                        e.currentTarget.blur()
+                      }
+                    }}
+                    className="w-9 bg-transparent text-center font-serif text-lg font-semibold text-stone-900 outline-none"
+                    aria-label="年龄数字输入"
+                  />
+                  <span className="text-xs text-stone-400">岁</span>
+                </div>
+              )}
+              {compact && (
+                <span className="shrink-0 font-serif text-lg font-semibold tabular-nums text-stone-800">
+                  {age} 岁
+                </span>
+              )}
             </div>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div>
-              <span className="mb-1.5 block text-xs text-stone-500">起始年龄</span>
-              <input
-                type="range"
-                min={0}
-                max={80}
-                value={rangeStart}
-                onChange={(e) => {
-                  const v = Number(e.target.value)
-                  onRangeStartChange(v)
-                  if (v > rangeEnd) onRangeEndChange(v)
-                }}
-                className="slider-track w-full"
-              />
-            </div>
-            <div>
-              <span className="mb-1.5 block text-xs text-stone-500">结束年龄</span>
-              <input
-                type="range"
-                min={0}
-                max={80}
-                value={rangeEnd}
-                onChange={(e) => {
-                  const v = Number(e.target.value)
-                  onRangeEndChange(v)
-                  if (v < rangeStart) onRangeStartChange(v)
-                }}
-                className="slider-track w-full"
-              />
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="flex flex-wrap gap-2 border-t border-stone-200/60 pt-4">
-        <Toggle
-          checked={rangeMode}
-          onChange={onRangeModeChange}
-          label="区间探索"
-          icon={Layers}
-        />
-        <Toggle
-          checked={hideClosed}
-          onChange={onHideClosedChange}
-          label="仅看仍可做"
-          icon={Sparkles}
-        />
-      </div>
-
-      <div className="border-t border-stone-200/60 pt-4">
-        <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-stone-400">
-          <Filter className="h-3.5 w-3.5" />
-          类别筛选
+          )}
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Chip active={category === 'all'} onClick={() => onCategoryChange('all')}>
+
+        <div
+          className={cn(
+            'flex flex-wrap gap-2',
+            !compact && 'border-t border-stone-200/60 pt-3',
+          )}
+        >
+          <Toggle
+            checked={rangeMode}
+            onChange={onRangeModeChange}
+            label="区间"
+            icon={Layers}
+            small={compact}
+            disabled={disabled}
+          />
+          <Toggle
+            checked={hideClosed}
+            onChange={(v) => {
+              onHideClosedChange(v)
+              if (v) onDissolveClosedChange(false)
+            }}
+            label="仅可做"
+            icon={Sparkles}
+            small={compact}
+            disabled={disabled}
+          />
+          <Toggle
+            checked={dissolveClosed}
+            onChange={(v) => {
+              onDissolveClosedChange(v)
+              if (v) onHideClosedChange(false)
+            }}
+            label={compact ? '灵魂飘散' : '已关飘散'}
+            icon={Ghost}
+            small={compact}
+            disabled={disabled}
+          />
+        </div>
+      </div>
+
+      {!compact && (
+        <div className="border-t border-stone-200/60 pt-3">
+          <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-stone-400">
+            <Filter className="h-3.5 w-3.5" />
+            类别
+          </div>
+          <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <Chip active={category === 'all'} onClick={() => onCategoryChange('all')} disabled={disabled}>
+              全部
+            </Chip>
+            {categories.map(([key, label]) => (
+              <Chip
+                key={key}
+                active={category === key}
+                onClick={() => onCategoryChange(key)}
+                disabled={disabled}
+              >
+                {label}
+              </Chip>
+            ))}
+          </div>
+        </div>
+      )}
+    </>
+  )
+
+  if (compact) {
+    return (
+      <div className="space-y-2" aria-label="筛选与控制">
+        {inner}
+        <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <Chip active={category === 'all'} onClick={() => onCategoryChange('all')} small disabled={disabled}>
             全部
           </Chip>
           {categories.map(([key, label]) => (
@@ -174,12 +248,26 @@ export function Controls({
               key={key}
               active={category === key}
               onClick={() => onCategoryChange(key)}
+              small
+              disabled={disabled}
             >
               {label}
             </Chip>
           ))}
         </div>
       </div>
+    )
+  }
+
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.1, duration: 0.4 }}
+      className="glass-panel space-y-4 p-4 sm:p-5"
+      aria-label="筛选与控制"
+    >
+      {inner}
     </motion.section>
   )
 }
@@ -188,20 +276,27 @@ function Chip({
   children,
   active,
   onClick,
+  small,
+  disabled,
 }: {
   children: ReactNode
   active: boolean
   onClick: () => void
+  small?: boolean
+  disabled?: boolean
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       className={cn(
-        'rounded-full px-3.5 py-1.5 text-sm transition-all duration-200',
+        'shrink-0 rounded-full transition-all duration-200',
+        small ? 'px-2.5 py-1 text-xs' : 'px-3 py-1.5 text-sm',
         active
-          ? 'bg-amber-700 text-white shadow-sm shadow-amber-900/20'
+          ? 'bg-amber-700 text-white shadow-sm'
           : 'bg-stone-100/90 text-stone-600 ring-1 ring-stone-200/50 hover:bg-stone-200/80',
+        disabled && 'cursor-not-allowed opacity-50',
       )}
     >
       {children}
