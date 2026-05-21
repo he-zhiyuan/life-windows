@@ -31,7 +31,6 @@ type Params = {
   category: Opportunity['category'] | 'all'
   /** 仅可做：隐藏已关窗口，新关闭时播放碎裂动画 */
   onlyActionable: boolean
-  isAgeDragging: boolean
 }
 
 function computeItems(
@@ -76,7 +75,6 @@ export function useDissolveSequence(params: Params) {
     rangeEnd,
     category,
     onlyActionable,
-    isAgeDragging,
   } = params
 
   const [phase, setPhase] = useState<DissolvePhase>('idle')
@@ -169,12 +167,11 @@ export function useDissolveSequence(params: Params) {
     if (phase === 'dissolving' || phase === 'queued') {
       return frozenItems
     }
-    const effectiveOnlyActionable = onlyActionable && !isAgeDragging
-    const visible = filterVisible(committedItems, effectiveOnlyActionable)
+    const visible = filterVisible(committedItems, onlyActionable)
     return [...visible].sort(
       (a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status),
     )
-  }, [phase, frozenItems, committedItems, onlyActionable, isAgeDragging])
+  }, [phase, frozenItems, committedItems, onlyActionable])
 
   const finishSequence = useCallback(() => {
     const age = pendingAgeRef.current

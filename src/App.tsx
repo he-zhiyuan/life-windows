@@ -87,7 +87,6 @@ export default function App() {
     rangeEnd,
     category,
     onlyActionable,
-    isAgeDragging,
   })
 
   const applyCommittedAge = useCallback((age: number) => {
@@ -250,6 +249,7 @@ export default function App() {
               upcomingDissolveId={upcomingDissolveId}
               layoutFrozen={layoutFrozen}
               layoutAnimating={layoutAnimating}
+              isAgeDragging={isAgeDragging}
               phaseLabel={phaseLabel(phase, dissolveProgress)}
               onSelect={setSelectedId}
               onDissolveComplete={completeDissolve}

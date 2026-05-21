@@ -14,6 +14,8 @@ type Props = {
   pausedNext?: boolean
   layoutEnabled?: boolean
   layoutAnimating?: boolean
+  /** 拖动年龄时关闭 layout/入场动画，避免卡片空白但仍可点 */
+  suppressMotion?: boolean
   onSelect: () => void
 }
 
@@ -38,8 +40,10 @@ export function CompactCard({
   pausedNext,
   layoutEnabled = true,
   layoutAnimating = false,
+  suppressMotion = false,
   onSelect,
 }: Props) {
+  const motionOn = layoutEnabled && !suppressMotion
   const { title, description, category } = opportunity
   const Icon = CATEGORY_ICONS[category]
   const styles = STATUS_STYLES[status]
@@ -47,17 +51,17 @@ export function CompactCard({
   return (
     <motion.button
       type="button"
-      layout={layoutEnabled && !dissolving}
+      layout={motionOn && !dissolving}
       transition={
-        layoutAnimating
+        layoutAnimating && !suppressMotion
           ? { type: 'spring', stiffness: 320, damping: 28 }
           : { duration: 0.22 }
       }
       onClick={dissolving || waitingDissolve ? undefined : onSelect}
       disabled={dissolving || waitingDissolve}
-      initial={layoutEnabled ? { opacity: 0, scale: 0.92 } : false}
+      initial={false}
       animate={{ opacity: 1, scale: 1 }}
-      exit={layoutEnabled ? { opacity: 0, scale: 0.88 } : undefined}
+      exit={motionOn ? { opacity: 0, scale: 0.96 } : undefined}
       className={cn(
         'flex h-full min-h-[5.5rem] w-full flex-col rounded-xl border border-stone-200/80 border-t-[3px] bg-white p-2.5 text-left shadow-sm transition-shadow',
         STATUS_BORDER[status],

@@ -23,6 +23,7 @@ type Props = {
   upcomingDissolveId?: string | null
   layoutFrozen: boolean
   layoutAnimating: boolean
+  isAgeDragging?: boolean
   phaseLabel?: string | null
   onSelect: (id: string) => void
   onDissolveComplete: (id: string) => void
@@ -40,6 +41,7 @@ export function CardCanvas({
   upcomingDissolveId = null,
   layoutFrozen,
   layoutAnimating,
+  isAgeDragging = false,
   phaseLabel,
   onSelect,
   onDissolveComplete,
@@ -75,7 +77,7 @@ export function CardCanvas({
             gridAutoRows: sorted.length > 28 ? 'minmax(5rem, 1fr)' : 'minmax(5.5rem, 1fr)',
           }}
         >
-          <AnimatePresence mode={layoutFrozen ? 'sync' : 'popLayout'}>
+          <AnimatePresence mode={layoutFrozen || isAgeDragging ? 'sync' : 'popLayout'}>
             {sorted.map((item) => {
               const isVanished = vanishedIds.has(item.id)
               const isActive = activeDissolveId === item.id
@@ -108,7 +110,8 @@ export function CardCanvas({
                   previewClosing={previewClosingIds.has(item.id)}
                   pausedNext={isPausedNext}
                   layoutEnabled={!layoutFrozen}
-                  layoutAnimating={layoutAnimating}
+                  layoutAnimating={layoutAnimating && !isAgeDragging}
+                  suppressMotion={isAgeDragging}
                 />
               )
 
@@ -132,7 +135,7 @@ export function CardCanvas({
               return (
                 <motion.div
                   key={item.id}
-                  layout={!layoutFrozen && layoutAnimating}
+                  layout={!layoutFrozen && layoutAnimating && !isAgeDragging}
                   className="h-full w-full"
                   transition={{ type: 'spring', stiffness: 320, damping: 28 }}
                 >
