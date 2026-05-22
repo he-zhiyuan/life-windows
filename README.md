@@ -1,6 +1,8 @@
 # ⏳ 时光窗口 · Life Windows
 
-> 🗺️ 人生一次性决策的**时间窗口地图** — 拖动年龄，查看 🟢 开放 · 🟠 将关 · 🔵 未来 · ⚪ 已过的窗口；开启「仅可做」后，还可观看已关窗口的飘散动画 ✨
+🌐 **在线体验：** [https://life-windows.hezhiyuan.me/](https://life-windows.hezhiyuan.me/)
+
+> 🗺️ 人生一次性决策的**时间窗口地图** — 拖动年龄，查看 🟢 开放 · 🟠 将关 · 🔵 未来 · ⚪ 已过的窗口；开启「隐藏已关窗口」后，还可观看已关窗口的飘散动画 ✨
 
 ---
 
@@ -78,6 +80,14 @@ src/
 ```
 
 🔎 详见 [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)。
+
+---
+
+## 📄 许可与版权
+
+- 著作权人：**何致远**
+- 开源许可：[MIT License](./LICENSE)
+- 中文说明：[软件许可协议](./LICENSE.zh-CN.md)
 
 ---
 
