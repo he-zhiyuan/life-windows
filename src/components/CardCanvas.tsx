@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import type { DissolvePhase } from '../hooks/useDissolveSequence'
 import type { Opportunity, WindowStatus } from '../types'
+import { getDissolveItemState } from '../utils/dissolve-state'
 import { CompactCard } from './CompactCard'
 import {
   DEFAULT_DISSOLVE_DURATION,
@@ -79,15 +80,15 @@ export function CardCanvas({
         >
           <AnimatePresence mode={layoutFrozen || isAgeDragging ? 'sync' : 'popLayout'}>
             {sorted.map((item) => {
-              const isVanished = vanishedIds.has(item.id)
-              const isActive = activeDissolveId === item.id
-              const isWaiting =
-                dissolvePhase === 'dissolving' &&
-                pendingDissolveIds.has(item.id) &&
-                !isVanished &&
-                !isActive
-              const isPausedNext =
-                dissolvePhase === 'queued' && upcomingDissolveId === item.id
+              const { isVanished, isActive, isWaiting, isPausedNext } =
+                getDissolveItemState(
+                  item.id,
+                  dissolvePhase,
+                  activeDissolveId,
+                  vanishedIds,
+                  pendingDissolveIds,
+                  upcomingDissolveId,
+                )
 
               if (isVanished) {
                 return (

@@ -2,6 +2,7 @@ import { AnimatePresence } from 'framer-motion'
 import { CircleDot } from 'lucide-react'
 import type { DissolvePhase } from '../hooks/useDissolveSequence'
 import type { Opportunity, WindowStatus } from '../types'
+import { getDissolveItemState } from '../utils/dissolve-state'
 import { SECTION_STYLES } from '../lib/category-style'
 import { cn } from '../lib/cn'
 import { OpportunityCard } from './OpportunityCard'
@@ -88,15 +89,15 @@ export function Section({
         <AnimatePresence mode="sync">
           <div className="flex flex-col gap-2.5">
             {items.map((item, i) => {
-              const isVanished = vanishedIds.has(item.id)
-              const isActive = activeDissolveId === item.id
-              const isWaiting =
-                dissolvePhase === 'dissolving' &&
-                pendingDissolveIds.has(item.id) &&
-                !isVanished &&
-                !isActive
-              const isPausedNext =
-                dissolvePhase === 'queued' && upcomingDissolveId === item.id
+              const { isVanished, isActive, isWaiting, isPausedNext } =
+                getDissolveItemState(
+                  item.id,
+                  dissolvePhase,
+                  activeDissolveId,
+                  vanishedIds,
+                  pendingDissolveIds,
+                  upcomingDissolveId,
+                )
 
               if (isVanished) return null
 
